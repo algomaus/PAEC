@@ -1,0 +1,27 @@
+Libraries (-l):
+
+bz2
+python2.7
+gomp
+sdsl
+divsufsort
+divsufsort64
+z
+rt
+pthread
+boost_system
+boost_iostreams
+
+
+Include directories (-I):
+
+/home/sarah/Documents/Masterarbeit/external_software/cereal/include
+
+
+Compilation options:
+-O3 -Wall -c -fmessage-length=0
+
+Further Compilation flags:
+-std=c++14 -c -fmessage-length=0 -DSEQAN_HAS_ZLIB=1 -DSEQAN_HAS_BZIP2=1 -fopenmp
+
+For Debug version: add -g3 to the compilation flags...
