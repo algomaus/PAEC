@@ -25,7 +25,7 @@ public:
 
 	template<class Archive>
 	void serialize(Archive & archive) {
-		archive(originalRead, correctedRead, positionOffset, beginPos, alignedCorrections); // serialize things by passing them to the archive
+		archive(originalRead, correctedRead, originalPositions, beginPos, alignedCorrections); // serialize things by passing them to the archive
 	}
 };
 
@@ -35,7 +35,7 @@ inline std::ostream& operator<<(std::ostream &os, const CorrectedReadAligned &co
 
 inline std::istream& operator>>(std::istream &is, CorrectedReadAligned &corr) {
 	size_t corrSize;
-	is >> corr.originalRead >> corr.correctedRead >> corr.beginPos >> corr.positionOffset >> corrSize;
+	is >> corr.originalRead >> corr.correctedRead >> corr.beginPos;// >> corr.positionOffset >> corrSize;
 	for (size_t i = 0; i < corrSize; ++i) {
 		CorrectionAligned ca;
 		is >> ca;

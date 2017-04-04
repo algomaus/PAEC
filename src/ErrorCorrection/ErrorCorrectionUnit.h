@@ -25,7 +25,7 @@
 using namespace std::placeholders;
 
 enum ErrorCorrectionType {
-	NAIVE = 0, KMER_BASED = 1, MULTIDEL_POSTCORRECTION = 2
+	NAIVE = 0, KMER_BASED = 1
 };
 
 /*
@@ -35,7 +35,7 @@ enum ErrorCorrectionType {
 class ErrorCorrectionUnit {
 public:
 	ErrorCorrectionUnit();
-	ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu);
+	ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu, bool correctIndels);
 	void addReadsFile(const std::string &filepath);
 	void addReadsFile(const std::string &filepath, const std::string &outputPath);
 	void correctReads(); // write the results to filepath + "_precorrected.txt"

@@ -52,13 +52,16 @@ void ErrorDetectionUnit::correctReads(const seqan::Dna5String &reference) {
 		double minProgress = 1;
 		while (iterators[i]->hasReadsLeft()) {
 			ReadWithAlignments alignedRead = iterators[i]->next();
-			CorrectedReadAligned cra = alignedRead.retrieveCorrectedRead(reference);
-			outFilesCorrectedReads[i] << cra.correctedRead << "\n";
-			//if (cra.corrections.size() > 0) {
 
-			cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
-			oarchive(cra);
-			//}
+			if (alignedRead.records.size() == 1) {
+				CorrectedReadAligned cra = alignedRead.retrieveCorrectedRead(reference);
+				outFilesCorrectedReads[i] << cra.correctedRead << "\n";
+				//if (cra.corrections.size() > 0) {
+
+				cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
+				oarchive(cra);
+				//}
+			}
 
 			double progress = iterators[i]->progress();
 			if (progress >= minProgress) {
@@ -90,7 +93,9 @@ double ErrorDetectionUnit::produceData(std::vector<ReadWithAlignments> &buffer, 
 	if (iterators[producerId]->hasReadsLeft()) {
 		std::vector<ReadWithAlignments> alignedReads = iterators[producerId]->next(maxBufferSize);
 		for (ReadWithAlignments rwa : alignedReads) {
-			buffer.push_back(rwa);
+			if (rwa.records.size() == 1) {
+				buffer.push_back(rwa);
+			}
 		}
 	}
 

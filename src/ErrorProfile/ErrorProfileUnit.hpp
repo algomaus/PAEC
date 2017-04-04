@@ -48,7 +48,7 @@ public:
 			std::vector<std::unordered_map<ErrorType, double> > res;
 			assert(from < read.sequence.size());
 			assert(to < read.sequence.size());
-			for (size_t i = from; i < to; ++i) {
+			for (size_t i = from; i <= to; ++i) {
 				res.push_back(getErrorProbabilities(read, i));
 			}
 			return res;

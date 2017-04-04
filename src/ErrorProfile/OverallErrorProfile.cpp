@@ -152,7 +152,32 @@ std::unordered_map<ErrorType, double> OverallErrorProfile::getKmerErrorProbabili
 
 std::unordered_map<ErrorType, double> OverallErrorProfile::getErrorProbabilities(const FASTQRead &read,
 		size_t positionInRead) {
-	return getKmerErrorProbabilities(read.sequence, positionInRead);
+	if (finalized) {
+			return getErrorProbabilitiesFinalized(read.sequence, positionInRead);
+		}
+		std::unordered_map<ErrorType, double> overallProb;
+		for (auto kv : counts) {
+			overallProb[kv.first] = (double) kv.second / totalCount;
+		}
+		overallProb[ErrorType::SUB_FROM_A] = (double) substitutionMatrix[std::make_pair('A', read.sequence[positionInRead])]
+				/ totalCount;
+		overallProb[ErrorType::SUB_FROM_C] = (double) substitutionMatrix[std::make_pair('C', read.sequence[positionInRead])]
+				/ totalCount;
+		overallProb[ErrorType::SUB_FROM_G] = (double) substitutionMatrix[std::make_pair('G', read.sequence[positionInRead])]
+				/ totalCount;
+		overallProb[ErrorType::SUB_FROM_T] = (double) substitutionMatrix[std::make_pair('T', read.sequence[positionInRead])]
+				/ totalCount;
+
+		assert(noncorrectBases <= totalCount);
+		overallProb[ErrorType::CORRECT] = (double) (totalCount - noncorrectBases) / totalCount;
+		assert(deletedBases <= totalCount);
+		overallProb[ErrorType::NODEL] = (double) (totalCount - deletedBases) / totalCount;
+
+		for (auto kv : overallProb) {
+			overallProb[kv.first] = log(overallProb[kv.first]);
+		}
+
+		return overallProb;
 }
 
 void OverallErrorProfile::storeErrorProfile(const std::string &filepath) {

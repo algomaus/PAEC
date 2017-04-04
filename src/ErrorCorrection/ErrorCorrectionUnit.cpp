@@ -18,13 +18,13 @@
 ErrorCorrectionUnit::ErrorCorrectionUnit() {
 }
 
-ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu) {
+ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu, bool correctIndels) {
 	if (type == ErrorCorrectionType::KMER_BASED) {
-		correctRead = std::bind(precorrectRead_KmerBased, _1, std::ref(epu), std::ref(kcu));
+		correctRead = std::bind(correctRead_KmerBased, _1, std::ref(epu), std::ref(kcu), correctIndels);
 	} else if (type == ErrorCorrectionType::NAIVE) {
-		correctRead = std::bind(precorrectRead_Naive, _1, std::ref(epu));
+		correctRead = std::bind(correctRead_Naive, _1, std::ref(epu), std::ref(kcu), correctIndels);
 	} else {
-		correctRead = std::bind(postcorrectRead_Multidel, _1, std::ref(epu), std::ref(kcu));
+		throw std::runtime_error("Unclear error correction type");
 	}
 }
 
@@ -50,7 +50,7 @@ void ErrorCorrectionUnit::addReadsFile(const std::string &filepath, const std::s
 
 void ErrorCorrectionUnit::correctReads() {
 	for (size_t i = 0; i < readFiles.size(); ++i) {
-		double minProgress = 1;
+		double minProgress = 0;
 		while (iterators[i]->hasReadsLeft()) {
 			FASTQRead fastqRead = iterators[i]->next();
 			CorrectedRead cr = correctRead(fastqRead);

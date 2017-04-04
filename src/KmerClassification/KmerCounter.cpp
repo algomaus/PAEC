@@ -134,18 +134,19 @@ double KmerCounter::countKmerNoRCApproximate(const std::string &kmer,
 std::string KmerCounter::reverseComplementString(const std::string &sequence) {
 	std::string rc = "";
 	for (int i = sequence.size() - 1; i >= 0; i--) {
+		assert(i >= 0);
 		if (sequence[i] == 'A') {
-			rc += 'T';
+			rc += "T";
 		} else if (sequence[i] == 'T') {
-			rc += 'A';
+			rc += "A";
 		} else if (sequence[i] == 'C') {
-			rc += 'G';
+			rc += "G";
 		} else if (sequence[i] == 'G') {
-			rc += 'C';
+			rc += "C";
 		} else if (sequence[i] == 'N') {
-			rc += 'N';
+			rc += "N";
 		} else {
-			throw std::runtime_error("ERROR!!!!");
+			throw std::runtime_error("Error:" + std::to_string(sequence[i]) + " at pos " + std::to_string(i) + " of " + std::to_string(sequence.size())+ " invalid.");
 		}
 	}
 	return rc;

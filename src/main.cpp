@@ -103,21 +103,19 @@ void exitPython() {
 void processDataset(Dataset &ds) {
 	// TODO: FIXME: Bug in predict proba with classifier profile
 	ComponentSetup cs(ds, CoverageBiasType::MEDIAN_BIAS_REFERENCE,
-			KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING, ErrorProfileType::MACHINE_LEARNING,
-			ErrorCorrectionType::KMER_BASED);
+			KmerClassificationType::CLASSIFICATION_STATISTICAL, ErrorProfileType::OVERALL_STATS_ONLY,
+			ErrorCorrectionType::KMER_BASED, true);
 	// learn coverage bias.
-	cs.learnCoverageBias();
+	//cs.learnCoverageBias();
 	// train machine learning method for k-mer classification
-	cs.trainKmerClassification();
+	//cs.trainKmerClassification();
 
 	// extract errors from alignment
 	cs.extractErrors();
 	// train error profile
-	cs.trainErrorProfile();
-	// precorrect reads
-	cs.precorrectReads();
-	// postcorrect reads
-	cs.postcorrectReads();
+	//cs.trainErrorProfile();
+	// correct reads
+	//cs.correctReads();
 }
 
 int main() {

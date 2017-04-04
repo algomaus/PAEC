@@ -140,7 +140,7 @@ protected:
 						goLeft = true;
 					}
 				} else {
-					kmer = sequence[posInRead + offsetRight] + kmer;
+					kmer =  kmer + sequence[posInRead + offsetRight];
 					if (kmer.size() >= minKmerSize && kmer.size() % 2 == 1) {
 						if (kmerClassifier.classifyKmer(kmer) != KmerType::REPEAT) {
 							zScore = kmerClassifier.kmerZScore(kmer);

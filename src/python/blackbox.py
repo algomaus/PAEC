@@ -27,8 +27,14 @@ class classifier:
   def __init__(self):
     self.features = []
     self.classes = []
-    self.models = [GaussianNB(), DecisionTreeClassifier(), DecisionTreeClassifier(class_weight = 'balanced'), RandomForestClassifier(), RandomForestClassifier(class_weight = 'balanced'), LogisticRegression(), LogisticRegression(class_weight = 'balanced')]#, AdaBoostClassifier(), AdaBoostClassifier(DecisionTreeClassifier(class_weight = 'balanced'))]
-    self.modelnames = ['GaussianNB', 'DecisionTreeClassifier', 'DecisionTreeClassifier(balanced)', 'RandomForestClassifier', 'RandomForestClassifier(balanced)', 'LogisticRegression', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
+    #self.models = [GaussianNB(), DecisionTreeClassifier(), DecisionTreeClassifier(class_weight = 'balanced'), RandomForestClassifier(), RandomForestClassifier(class_weight = 'balanced'), LogisticRegression(), LogisticRegression(class_weight = 'balanced')]#, AdaBoostClassifier(), AdaBoostClassifier(DecisionTreeClassifier(class_weight = 'balanced'))]
+    #self.modelnames = ['GaussianNB', 'DecisionTreeClassifier', 'DecisionTreeClassifier(balanced)', 'RandomForestClassifier', 'RandomForestClassifier(balanced)', 'LogisticRegression', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
+    
+    
+    self.models = [GaussianNB(), DecisionTreeClassifier(class_weight = 'balanced'), RandomForestClassifier(class_weight = 'balanced'), LogisticRegression(class_weight = 'balanced')]#, AdaBoostClassifier(), AdaBoostClassifier(DecisionTreeClassifier(class_weight = 'balanced'))]
+    self.modelnames = ['GaussianNB', 'DecisionTreeClassifier', 'RandomForestClassifier', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
+    
+    
     self.best_model = GaussianNB()
   
   def add(self, num1, num2):

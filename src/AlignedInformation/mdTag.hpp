@@ -14,6 +14,16 @@ struct MDEntry {
 
 typedef std::vector<MDEntry> MDTag;
 
+inline std::string mdTagToString(MDTag &mdTag) {
+	std::string res = "";
+	for (size_t i = 0; i < mdTag.size(); ++i) {
+		res += mdTag[i].substitutedNucleotide;
+		res += " " + std::to_string(mdTag[i].position);
+		res += ",";
+	}
+	return res;
+}
+
 inline void parseMDTag(seqan::CharString mdString, MDTag &mdTag) {
   bool delmode = false;
   

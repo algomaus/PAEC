@@ -28,12 +28,14 @@ public:
 
 	FASTQRead originalRead;
 	FASTQRead correctedRead;
-	int positionOffset;
+
+	std::vector<int> originalPositions;
+
 	std::vector<Correction> corrections;
 
 	template<class Archive>
 	void serialize(Archive & archive) {
-		archive(originalRead, correctedRead, positionOffset, corrections); // serialize things by passing them to the archive
+		archive(originalRead, correctedRead, originalPositions, corrections); // serialize things by passing them to the archive
 	}
 };
 
@@ -41,9 +43,11 @@ inline std::ostream& operator<<(std::ostream &os, const CorrectedRead &corr) {
 	return os << corr.toString();
 }
 
+
+// TODO FIXME: This looks absolutetly wrong
 inline std::istream& operator>>(std::istream &is, CorrectedRead &corr) {
 	size_t corrSize;
-	is >> corr.originalRead >> corr.correctedRead >> corr.positionOffset >> corrSize;
+	is >> corr.originalRead >> corr.correctedRead;// >> corr.positionOffset >> corrSize;
 	for (size_t i = 0; i < corrSize; ++i) {
 		Correction co;
 		is >> co;

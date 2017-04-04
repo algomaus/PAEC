@@ -31,29 +31,21 @@ enum ErrorProfileType {
 class ComponentSetup {
 public:
 	ComponentSetup(Dataset &ds, CoverageBiasType coverageBiasType, KmerClassificationType classificationType,
-			ErrorProfileType errorProfileType, ErrorCorrectionType correctionType) :
+			ErrorProfileType errorProfileType, ErrorCorrectionType correctionType, bool correctIndels) :
 			dataset(ds), counterReads(ds.readsOnlyFileName), counterReference(ds.referenceFileName), pusm(
 					ds.readLengthsPtr, ds.genomeSize, ds.genomeType), covBias(coverageBiasType, ds.genomeSize, pusm), kmerClassifier(
 					counterReads, covBias, pusm, classificationType), epuMotif(counterReads), epuClassify(ds.plotPath, coverageBiasType,
 					kmerClassifier, epuMotif, ds.hasQualityScores) {
-		if (correctionType == ErrorCorrectionType::MULTIDEL_POSTCORRECTION) {
-			throw std::runtime_error(
-					"Multidel postcorrection is always done, please specify the precorrection type instead!");
-		}
-
 		covBiasType = coverageBiasType;
 		clsfyType = classificationType;
 		profileType = errorProfileType;
 
 		if (profileType == ErrorProfileType::MACHINE_LEARNING) {
-			ecuPre = ErrorCorrectionUnit(correctionType, epuClassify, kmerClassifier);
-			ecuPost = ErrorCorrectionUnit(ErrorCorrectionType::MULTIDEL_POSTCORRECTION, epuClassify, kmerClassifier);
+			ecu = ErrorCorrectionUnit(correctionType, epuClassify, kmerClassifier, correctIndels);
 		} else if (profileType == ErrorProfileType::MOTIF_STATS_ONLY) {
-			ecuPre = ErrorCorrectionUnit(correctionType, epuMotif, kmerClassifier);
-			ecuPost = ErrorCorrectionUnit(ErrorCorrectionType::MULTIDEL_POSTCORRECTION, epuMotif, kmerClassifier);
+			ecu = ErrorCorrectionUnit(correctionType, epuMotif, kmerClassifier, correctIndels);
 		} else {
-			ecuPre = ErrorCorrectionUnit(correctionType, epuOverall, kmerClassifier);
-			ecuPost = ErrorCorrectionUnit(ErrorCorrectionType::MULTIDEL_POSTCORRECTION, epuOverall, kmerClassifier);
+			ecu = ErrorCorrectionUnit(correctionType, epuOverall, kmerClassifier, correctIndels);
 		}
 
 	}
@@ -116,8 +108,9 @@ public:
 		if (infile.good()) {
 			std::cout << "Errors have already been extracted. Skipping error extraction.\n";
 		} else {
-			edu.addAlignmentsFile(dataset.readAlignmentsFileName);
-			edu.correctReadsMultithreaded(dataset.genome);
+			edu.addAlignmentsFile(dataset.readAlignmentsFileName, dataset.plotPath);
+			edu.correctReads(dataset.genome);
+			//edu.correctReadsMultithreaded(dataset.genome);
 		}
 	}
 
@@ -181,19 +174,12 @@ public:
 		}
 	}
 
-	void precorrectReads() {
-		ecuPre.addReadsFile(dataset.readsFileName, dataset.readsFileName + "pre");
-		std::cout << "Precorrecting reads...\n";
-		ecuPre.correctReadsMultithreaded();
-		//ecuPre.correctReads();
-		std::cout << "Finished precorrecting reads.\n";
-	}
-
-	void postcorrectReads() {
-		ecuPost.addReadsFile(dataset.readsFileName + "precorrectedReads.fastq", dataset.readsFileName + "post");
-		std::cout << "Postcorrecting reads...\n";
-		ecuPost.correctReadsMultithreaded();
-		std::cout << "Finished postcorrecting reads.\n";
+	void correctReads() {
+		ecu.addReadsFile(dataset.readsFileName, dataset.plotPath);
+		std::cout << "Correcting reads...\n";
+		//ecu.correctReadsMultithreaded();
+		ecu.correctReads();
+		std::cout << "Finished correcting reads.\n";
 	}
 
 	Dataset dataset;
@@ -210,8 +196,7 @@ public:
 	ClassifierErrorProfile epuClassify;
 
 	ErrorDetectionUnit edu;
-	ErrorCorrectionUnit ecuPre;
-	ErrorCorrectionUnit ecuPost;
+	ErrorCorrectionUnit ecu;
 private:
 	CoverageBiasType covBiasType;
 	KmerClassificationType clsfyType;
