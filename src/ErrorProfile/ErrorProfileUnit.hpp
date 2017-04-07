@@ -87,11 +87,11 @@ public:
 			throw std::runtime_error("The file " + correctionsFile + " does not exist!");
 		}
 		size_t minProgress = 0;
-		size_t n;
+		unsigned long long n;
 		CorrectedReadAligned cra;
 		cereal::BinaryInputArchive iarchive(infile);
 		iarchive(n);
-		for (size_t i = 0; i < n; ++i) {
+		for (unsigned long long i = 0; i < n; ++i) {
 			iarchive(cra);
 			checkAligned(cra, acceptProb);
 			double progress = (double) i * 100 / n;

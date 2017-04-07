@@ -256,10 +256,39 @@ void OverallErrorProfile::finalize() {
 	}
 	assert(totalCount > 0);
 
+
+	std::cout << "OverallErrorProfile error counts:\n";
+	std::cout << "totalCount: " << totalCount << "\n";
+	std::cout << "noncorrectBases: " << noncorrectBases << "\n";
+	std::cout << "deletion errors: " << deletedBases << "\n";
+	for (auto kv : counts) {
+		if (kv.first != ErrorType::SUB_FROM_A && kv.first != ErrorType::SUB_FROM_C && kv.first != ErrorType::SUB_FROM_G
+				&& kv.first != ErrorType::SUB_FROM_T)
+			std::cout << "count[" << kv.first << "] = " << kv.second << "\n";
+	}
+	std::vector<char> bases = { 'A', 'C', 'G', 'T', 'N' };
+	for (char invalidBase : bases) {
+		if (invalidBase != 'A') {
+			std::cout << "count[A <- " << invalidBase << "] = "
+					<< substitutionMatrix[std::make_pair('A', invalidBase)] << "\n";
+		}
+		if (invalidBase != 'C') {
+			std::cout << "count[C <- " << invalidBase << "] = "
+					<< substitutionMatrix[std::make_pair('C', invalidBase)] << "\n";
+		}
+		if (invalidBase != 'G') {
+			std::cout << "count[G <- " << invalidBase << "] = "
+					<< substitutionMatrix[std::make_pair('G', invalidBase)] << "\n";
+		}
+		if (invalidBase != 'T') {
+			std::cout << "count[T <- " << invalidBase << "] = "
+					<< substitutionMatrix[std::make_pair('T', invalidBase)] << "\n";
+		}
+	}
+
 	for (auto kv : counts) {
 		counts_finalized[kv.first] = log((double) kv.second / totalCount);
 	}
-	std::vector<char> bases = { 'A', 'C', 'G', 'T', 'N' };
 
 	for (char invalidBase : bases) {
 		if (invalidBase != 'A') {

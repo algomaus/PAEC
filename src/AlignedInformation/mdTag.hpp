@@ -7,10 +7,10 @@
 #include <vector>
 #include <string>
 
-struct MDEntry {
+typedef struct MDEntry {
   seqan::Dna substitutedNucleotide;
   unsigned position;
-};
+} MDEntry;
 
 typedef std::vector<MDEntry> MDTag;
 

@@ -68,7 +68,8 @@ std::string kmerAfterError(const std::string &kmer, ErrorType error, int posOfEr
 KmerType checkLeftOf(size_t pos, const CorrectedRead &corr, KmerClassificationUnit &kmerClassifier) {
 	KmerType type = KmerType::REPEAT;
 	if (pos >= kmerClassifier.getMinKmerSize()) {
-		std::string kmerString = corr.correctedRead.sequence.substr(pos - kmerClassifier.getMinKmerSize(), kmerClassifier.getMinKmerSize());
+		std::string kmerString = corr.correctedRead.sequence.substr(pos - kmerClassifier.getMinKmerSize(),
+				kmerClassifier.getMinKmerSize());
 		if (kmerString.find("_") != std::string::npos) {
 			return type;
 		}
@@ -94,7 +95,7 @@ KmerType checkRightOf(size_t pos, const CorrectedRead &corr, KmerClassificationU
 		if (kmerString.size() > kmerClassifier.getMinKmerSize()) {
 			throw std::runtime_error("This should not happen,,");
 		}
-	
+
 		std::string kmerString = corr.correctedRead.sequence.substr(pos + 1, kmerClassifier.getMinKmerSize());
 		if (kmerString.find("_") != std::string::npos) {
 			return type;
@@ -114,8 +115,8 @@ KmerType checkRightOf(size_t pos, const CorrectedRead &corr, KmerClassificationU
 	return type;
 }
 
-
-KmerType classifyMiddleWithPosAs(size_t posInRead, const std::string &sequence, KmerClassificationUnit &kmerClassifier, std::string middle = "") {
+KmerType classifyMiddleWithPosAs(size_t posInRead, const std::string &sequence, KmerClassificationUnit &kmerClassifier,
+		std::string middle = "") {
 	bool leftPossible = (posInRead >= 1);
 	bool rightPossible = (posInRead <= sequence.size() - 2);
 
@@ -174,10 +175,10 @@ KmerType classifyMiddleWithPosAs(size_t posInRead, const std::string &sequence, 
 	return kmerType;
 }
 
-
 //TODO: FIXME: this function is buggy
 // used for multideletions, such as ab_cd, checks the type of abcd, i.e., without the gap in between.
-KmerType classifyMiddleWithoutPos(size_t posInRead, const std::string &sequence, KmerClassificationUnit &kmerClassifier) {
+KmerType classifyMiddleWithoutPos(size_t posInRead, const std::string &sequence,
+		KmerClassificationUnit &kmerClassifier) {
 	bool leftPossible = (posInRead >= 1);
 	bool rightPossible = (posInRead <= sequence.size() - 2);
 
@@ -236,24 +237,24 @@ KmerType classifyMiddleWithoutPos(size_t posInRead, const std::string &sequence,
 	return kmerType;
 }
 
-bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerClassificationUnit &kmerClassifier, size_t multidelPos) {
+bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerClassificationUnit &kmerClassifier,
+		size_t multidelPos) {
 	assert(corr.correctedRead.sequence[multidelPos] == '_');
 	bool canExtendLeft = true;
 	bool canExtendRight = true;
 	bool doLeft = true;
 	KmerType typeMiddle = classifyMiddleWithoutPos(multidelPos, corr.correctedRead.sequence, kmerClassifier);
-	
+
 	KmerType typeLeft = checkLeftOf(multidelPos, corr, kmerClassifier);
 	KmerType typeRight = checkRightOf(multidelPos, corr, kmerClassifier);
-	
+
 	//std::string kmerLeft = corr.correctedRead.sequence.substr(multidelPos - kmerClassifier.getMinKmerSize(), kmerClassifier.getMinKmerSize());
 	//std::cout << "Fixing multidel with kmerLeft = " << kmerLeft << "\n";
-	
+
 	if (typeLeft == KmerType::UNTRUSTED || typeRight == KmerType::UNTRUSTED) {
 		throw std::runtime_error("Something is strange");
 	}
-	
-	
+
 	// if we only had (canExtendLeft || canExtendRight), we might end up in partial assembly!
 	while ((canExtendLeft && canExtendRight) && typeMiddle != KmerType::TRUSTED) {
 		if (multidelPos > corr.correctedRead.sequence.size()) {
@@ -261,31 +262,35 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 		}
 		// ... TODO: here comes the code
 		if (doLeft) { // try left-extension
-			std::string kmerLeft = corr.correctedRead.sequence.substr(std::max(0, (int)multidelPos - (int) kmerClassifier.getMinKmerSize()), kmerClassifier.getMinKmerSize());
+			std::string kmerLeft = corr.correctedRead.sequence.substr(
+					std::max(0, (int) multidelPos - (int) kmerClassifier.getMinKmerSize()),
+					kmerClassifier.getMinKmerSize());
 			if (kmerLeft.find("_") != std::string::npos) {
 				kmerLeft = kmerLeft.substr(0, kmerLeft.find("_"));
 			}
-		
+
 			auto probs = errorProfile.getErrorProbabilities(corr.correctedRead, multidelPos - 1);
 			// sort the possible corrections based on their probability
 			std::vector<std::pair<ErrorType, double> > ranking;
 			for (auto kv : probs) {
-				if (kv.first == ErrorType::DEL_OF_A || kv.first == ErrorType::DEL_OF_C || kv.first == ErrorType::DEL_OF_G || kv.first == ErrorType::DEL_OF_T) {
+				if (kv.first == ErrorType::DEL_OF_A || kv.first == ErrorType::DEL_OF_C
+						|| kv.first == ErrorType::DEL_OF_G || kv.first == ErrorType::DEL_OF_T) {
 					ranking.push_back(kv);
 				}
 			}
 			// sort ranking by descending kv.second
-			std::sort(ranking.begin(), ranking.end(), [](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
-			    return left.second > right.second;
-			});
-		
+			std::sort(ranking.begin(), ranking.end(),
+					[](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
+						return left.second > right.second;
+					});
+
 			KmerType kmerType = KmerType::UNTRUSTED;
 			for (size_t i = 0; i < ranking.size(); ++i) {
 				ErrorType bestError = ranking[i].first;
 				std::string correctedKmer = kmerAfterError(kmerLeft, bestError, kmerLeft.size() - 1);
-				
+
 				kmerType = kmerClassifier.classifyKmer(correctedKmer);
-				int j = std::max(0, (int)multidelPos - (int) kmerClassifier.getMinKmerSize());
+				int j = std::max(0, (int) multidelPos - (int) kmerClassifier.getMinKmerSize());
 				while (kmerType == KmerType::REPEAT && j - 2 >= 0) {
 					if (corr.correctedRead.sequence[j - 1] == '_' || corr.correctedRead.sequence[j - 2] == '_') {
 						throw std::runtime_error("This should not happen");
@@ -295,7 +300,7 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 					kmerType = kmerClassifier.classifyKmer(correctedKmer);
 					j -= 2;
 				}
-				
+
 				if (kmerType == KmerType::TRUSTED) {
 					corr.applyCorrection(bestError, multidelPos - 1, ranking[i].second);
 					multidelPos++; // because we added a base left to the multidel
@@ -309,7 +314,8 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 				doLeft = false;
 			}
 		} else {
-			std::string kmerRight = corr.correctedRead.sequence.substr(multidelPos + 1, kmerClassifier.getMinKmerSize());
+			std::string kmerRight = corr.correctedRead.sequence.substr(multidelPos + 1,
+					kmerClassifier.getMinKmerSize());
 			if (kmerRight.find("_") != std::string::npos) {
 				kmerRight = kmerRight.substr(0, kmerRight.find("_"));
 			}
@@ -317,19 +323,21 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 			// sort the possible corrections based on their probability
 			std::vector<std::pair<ErrorType, double> > ranking;
 			for (auto kv : probs) {
-				if (kv.first == ErrorType::DEL_OF_A || kv.first == ErrorType::DEL_OF_C || kv.first == ErrorType::DEL_OF_G || kv.first == ErrorType::DEL_OF_T) {
+				if (kv.first == ErrorType::DEL_OF_A || kv.first == ErrorType::DEL_OF_C
+						|| kv.first == ErrorType::DEL_OF_G || kv.first == ErrorType::DEL_OF_T) {
 					ranking.push_back(kv);
 				}
 			}
 			// sort ranking by descending kv.second
-			std::sort(ranking.begin(), ranking.end(), [](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
-			    return left.second > right.second;
-			});
+			std::sort(ranking.begin(), ranking.end(),
+					[](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
+						return left.second > right.second;
+					});
 			KmerType kmerType = KmerType::UNTRUSTED;
 			for (size_t i = 0; i < ranking.size(); ++i) {
 				ErrorType bestError = ranking[i].first;
 				std::string correctedKmer = kmerAfterError(kmerRight, bestError, -1);
-				
+
 				kmerType = kmerClassifier.classifyKmer(correctedKmer);
 				int j = multidelPos + kmerClassifier.getMinKmerSize();
 				while (kmerType == KmerType::REPEAT && j + 2 < (int) corr.correctedRead.sequence.size()) {
@@ -341,7 +349,7 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 					kmerType = kmerClassifier.classifyKmer(correctedKmer);
 					j += 2;
 				}
-				
+
 				if (kmerType == KmerType::TRUSTED) {
 					corr.applyCorrection(bestError, multidelPos, ranking[i].second);
 					break;
@@ -356,7 +364,7 @@ bool resolveMultidel(CorrectedRead &corr, ErrorProfileUnit &errorProfile, KmerCl
 		}
 		typeMiddle = classifyMiddleWithoutPos(multidelPos, corr.correctedRead.sequence, kmerClassifier);
 	}
-	
+
 	if (typeMiddle == KmerType::UNTRUSTED) {
 		return false;
 	} else {
@@ -391,7 +399,7 @@ CorrectedRead postcorrectRead_Multidel(CorrectedRead &corr, ErrorProfileUnit &er
 bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &corr, ErrorProfileUnit &errorProfile,
 		KmerClassificationUnit &kmerClassifier, bool withMultidel, bool correctIndels) {
 	std::vector<std::unordered_map<ErrorType, double> > probs = errorProfile.getReadErrorProbabilitiesPartial(
-			corr.correctedRead, kmerStartPos, kmerStartPos + kmer.size() - 1);	
+			corr.correctedRead, kmerStartPos, kmerStartPos + kmer.size() - 1);
 	assert(probs.size() == kmer.size());
 	bool foundNewError = false;
 
@@ -400,75 +408,94 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 	for (size_t i = 0; i < kmer.size(); ++i) {
 		std::vector<std::pair<ErrorType, double> > rankings;
 		for (auto kv : probs[i]) {
-			if (!correctIndels && (kv.first == ErrorType::MULTIDEL || kv.first == ErrorType::DEL_OF_A 
-			|| kv.first == ErrorType::DEL_OF_C || kv.first == ErrorType::DEL_OF_G || kv.first == ErrorType::DEL_OF_T 
-			|| kv.first == ErrorType::INSERTION)) continue;
+			if (!correctIndels
+					&& (kv.first == ErrorType::MULTIDEL || kv.first == ErrorType::DEL_OF_A
+							|| kv.first == ErrorType::DEL_OF_C || kv.first == ErrorType::DEL_OF_G
+							|| kv.first == ErrorType::DEL_OF_T || kv.first == ErrorType::INSERTION))
+				continue;
 			rankings.push_back(kv);
 		}
 		// sort rankings by descending kv.second
-		std::sort(rankings.begin(), rankings.end(), [](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
-		    return left.second > right.second;
-		});
+		std::sort(rankings.begin(), rankings.end(),
+				[](const std::pair<ErrorType,double> &left, const std::pair<ErrorType,double> &right) {
+					return left.second > right.second;
+				});
 		probRankings.push_back(rankings);
 	}
 
 	for (size_t i = 0; i < kmer.size(); ++i) {
 		for (size_t j = 0; j < probRankings[i].size(); ++j) {
 			ErrorType bestError = probRankings[i][j].first;
-			if (bestError == ErrorType::MULTIDEL) continue;
-			
-			if (bestError == ErrorType::SUB_FROM_A && kmer[i] == 'A') continue;
-			if (bestError == ErrorType::SUB_FROM_C && kmer[i] == 'C') continue;
-			if (bestError == ErrorType::SUB_FROM_G && kmer[i] == 'G') continue;
-			if (bestError == ErrorType::SUB_FROM_T && kmer[i] == 'T') continue;
-			
-			if (bestError == ErrorType::INSERTION && i == 0) continue;
-			if (bestError == ErrorType::INSERTION && i == kmer.size() - 1) continue;
-			
-			if (bestError == ErrorType::CORRECT || bestError == ErrorType::NODEL) continue;
-			
-			if (bestError == ErrorType::MULTIDEL || bestError == ErrorType::DEL_OF_A || bestError == ErrorType::DEL_OF_C || bestError == ErrorType::DEL_OF_G || bestError == ErrorType::DEL_OF_T) {
+			if (bestError == ErrorType::MULTIDEL)
+				continue;
+
+			if (bestError == ErrorType::SUB_FROM_A && kmer[i] == 'A')
+				continue;
+			if (bestError == ErrorType::SUB_FROM_C && kmer[i] == 'C')
+				continue;
+			if (bestError == ErrorType::SUB_FROM_G && kmer[i] == 'G')
+				continue;
+			if (bestError == ErrorType::SUB_FROM_T && kmer[i] == 'T')
+				continue;
+
+			//if (bestError == ErrorType::INSERTION && i == 0) continue;
+			//if (bestError == ErrorType::INSERTION && i == kmer.size() - 1) continue;
+
+			if (bestError == ErrorType::CORRECT || bestError == ErrorType::NODEL)
+				continue;
+
+			if (bestError == ErrorType::MULTIDEL || bestError == ErrorType::DEL_OF_A || bestError == ErrorType::DEL_OF_C
+					|| bestError == ErrorType::DEL_OF_G || bestError == ErrorType::DEL_OF_T) {
 				if (bestError == ErrorType::MULTIDEL && !withMultidel) {
 					continue; // ignore Multidels for now...
 				}
+				if (kmerStartPos + i == corr.correctedRead.sequence.size() - 1) { // no deletion after the last base of a read
+					continue;
+				}
+
 				KmerType typeLeft = checkLeftOf(kmerStartPos + i + 1, corr, kmerClassifier);
 				KmerType typeRight = checkRightOf(kmerStartPos + i, corr, kmerClassifier);
 				if (typeLeft != KmerType::UNTRUSTED && typeRight != KmerType::UNTRUSTED) {
-					KmerType typeMiddle = classifyMiddleWithoutPos(kmerStartPos + i, corr.correctedRead.sequence, kmerClassifier);
+					KmerType typeMiddle = classifyMiddleWithoutPos(kmerStartPos + i, corr.correctedRead.sequence,
+							kmerClassifier);
 					if (typeMiddle == KmerType::UNTRUSTED) {
 						if (bestError == ErrorType::MULTIDEL) {
 							//std::string kmerLeft = corr.correctedRead.sequence.substr(i + kmerStartPos - kmerClassifier.getMinKmerSize(), kmerClassifier.getMinKmerSize());
-						
+
 							corr.applyCorrection(ErrorType::MULTIDEL, i + kmerStartPos, probRankings[i][j].second);
-								
+
 							//std::cout << "Added multidel with kmerLeft = " << kmerLeft << "\n";
-							
+
 							foundNewError = true;
 							return foundNewError;
 						} else { // single-base deletion error
 							if (bestError == ErrorType::DEL_OF_A) {
-								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i, corr.correctedRead.sequence, kmerClassifier, "A");
+								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i,
+										corr.correctedRead.sequence, kmerClassifier, "A");
 								if (actType == KmerType::TRUSTED) {
 									corr.applyCorrection(bestError, i + kmerStartPos, probRankings[i][j].second);
 									foundNewError = true;
 									return foundNewError;
 								}
 							} else if (bestError == ErrorType::DEL_OF_C) {
-								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i, corr.correctedRead.sequence, kmerClassifier, "C");
+								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i,
+										corr.correctedRead.sequence, kmerClassifier, "C");
 								if (actType == KmerType::TRUSTED) {
 									corr.applyCorrection(bestError, i + kmerStartPos, probRankings[i][j].second);
 									foundNewError = true;
 									return foundNewError;
 								}
 							} else if (bestError == ErrorType::DEL_OF_G) {
-								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i, corr.correctedRead.sequence, kmerClassifier, "G");
+								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i,
+										corr.correctedRead.sequence, kmerClassifier, "G");
 								if (actType == KmerType::TRUSTED) {
 									corr.applyCorrection(bestError, i + kmerStartPos, probRankings[i][j].second);
 									foundNewError = true;
 									return foundNewError;
 								}
 							} else {
-								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i, corr.correctedRead.sequence, kmerClassifier, "T");
+								KmerType actType = classifyMiddleWithPosAs(kmerStartPos + i,
+										corr.correctedRead.sequence, kmerClassifier, "T");
 								if (actType == KmerType::TRUSTED) {
 									corr.applyCorrection(bestError, i + kmerStartPos, probRankings[i][j].second);
 									foundNewError = true;
@@ -477,12 +504,13 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 							}
 						}
 					}
-				}	
+				}
 			} else {
-				if (withMultidel) continue;
+				if (withMultidel)
+					continue;
 				std::string correctedKmer = kmerAfterError(kmer, bestError, i);
 				KmerType type = kmerClassifier.classifyKmer(correctedKmer);
-	
+
 				// extend the k-mer if it is repetitive now
 				size_t inc = 0;
 				while (type == KmerType::REPEAT
@@ -492,7 +520,7 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 					type = kmerClassifier.classifyKmer(correctedKmer);
 					inc += 2;
 				}
-	
+
 				// check if the k-mer is fine now
 				if (type == KmerType::TRUSTED) {
 					// found the correction. Apply the correction to the corrected read,
@@ -530,12 +558,17 @@ bool precorrectRead_KmerBased(CorrectedRead &corr, ErrorProfileUnit &errorProfil
 			kmerType = kmerClassifier.classifyKmer(kmerString);
 		}
 		if (kmerType == KmerType::UNTRUSTED) {
-			foundNewError |= correctKmer(kmerString, i, corr, errorProfile, kmerClassifier, withMultidel, correctIndels);
+			foundNewError |= correctKmer(kmerString, i, corr, errorProfile, kmerClassifier, withMultidel,
+					correctIndels);
 		}
-		
+
 		//i += std::max(1, (int) kmerString.size() - 1);
-		
-		i += std::max(1, (int) kmerString.size() / 2);
+
+		if (correctIndels) {
+			i += std::max(1, (int) kmerString.size() / 2);
+		} else {
+			i += kmerString.size();
+		}
 	}
 
 	return foundNewError;
@@ -547,9 +580,10 @@ CorrectedRead precorrectRead_Naive(CorrectedRead &corr, ErrorProfileUnit &errorP
 		auto probs = errorProfile.getErrorProbabilities(corr.correctedRead, i);
 		std::pair<ErrorType, double> bestCurrent = mostLikelyCurrentBase(probs);
 		if (bestCurrent.first != ErrorType::CORRECT) {
-			if (!correctIndels && (bestCurrent.first == ErrorType::MULTIDEL || bestCurrent.first == ErrorType::DEL_OF_A 
-				|| bestCurrent.first == ErrorType::DEL_OF_C || bestCurrent.first == ErrorType::DEL_OF_G 
-				|| bestCurrent.first == ErrorType::DEL_OF_T || bestCurrent.first == ErrorType::INSERTION)) {
+			if (!correctIndels
+					&& (bestCurrent.first == ErrorType::MULTIDEL || bestCurrent.first == ErrorType::DEL_OF_A
+							|| bestCurrent.first == ErrorType::DEL_OF_C || bestCurrent.first == ErrorType::DEL_OF_G
+							|| bestCurrent.first == ErrorType::DEL_OF_T || bestCurrent.first == ErrorType::INSERTION)) {
 				continue;
 			}
 
@@ -581,33 +615,34 @@ CorrectedRead precorrectRead_Naive(CorrectedRead &corr, ErrorProfileUnit &errorP
 CorrectedRead correctRead_KmerBased(const FASTQRead &fastqRead, ErrorProfileUnit &errorProfile,
 		KmerClassificationUnit &kmerClassifier, bool correctIndels) {
 	CorrectedRead corr(fastqRead);
-	bool foundNewError = precorrectRead_KmerBased(corr, errorProfile, kmerClassifier, false, correctIndels);
-	int maxIterations = 100;
-	int actIteration = 0;
-	std::unordered_set<std::string> previousCorrections;
-	previousCorrections.insert(corr.correctedRead.sequence);
-	
+	//bool foundNewError =
+	precorrectRead_KmerBased(corr, errorProfile, kmerClassifier, false, correctIndels);
+	//int maxIterations = 100;
+	//int actIteration = 0;
+	//std::unordered_set<std::string> previousCorrections;
+	//previousCorrections.insert(corr.correctedRead.sequence);
+
 	/*if (!foundNewError) {
-		std::cout << "The read was correct. :)\n";
-	}*/
-	
-	while (foundNewError && actIteration < maxIterations) {
-		//std::cout << "new iteration\n";
-		foundNewError = precorrectRead_KmerBased(corr, errorProfile, kmerClassifier, false, correctIndels);
-		if (!foundNewError) break;
-		
-		std::string seqNow = corr.correctedRead.sequence;
-		if (previousCorrections.find(seqNow) != previousCorrections.end()) {
-			//std::cout << "Detected a previously encountered correction after " << actIteration + 1 << " iterations. -> correction terrace? \n";
-			break;
-		} else {
-			previousCorrections.insert(seqNow);
-		}
-		actIteration++;
-		if (actIteration == maxIterations) {
-			std::cout << "Stuck in endless loop?\n";
-		}
-	}
+	 std::cout << "The read was correct. :)\n";
+	 }*/
+
+	/*while (foundNewError && actIteration < maxIterations) {
+	 //std::cout << "new iteration\n";
+	 foundNewError = precorrectRead_KmerBased(corr, errorProfile, kmerClassifier, false, correctIndels);
+	 if (!foundNewError) break;
+
+	 std::string seqNow = corr.correctedRead.sequence;
+	 if (previousCorrections.find(seqNow) != previousCorrections.end()) {
+	 //std::cout << "Detected a previously encountered correction after " << actIteration + 1 << " iterations. -> correction terrace? \n";
+	 break;
+	 } else {
+	 previousCorrections.insert(seqNow);
+	 }
+	 actIteration++;
+	 if (actIteration == maxIterations) {
+	 std::cout << "Stuck in endless loop?\n";
+	 }
+	 }*/
 	//std::cout << "did " << actIteration+1 << " iterations.\n";
 	//precorrectRead_KmerBased(corr, errorProfile, kmerClassifier, true);
 	//postcorrectRead_Multidel(corr, errorProfile, kmerClassifier);

@@ -22,6 +22,51 @@ from sklearn.externals import joblib
 
 import os
 
+class naive:
+  def __init__(self):
+      pass
+
+  def fit(self, X, Y):
+      pass
+      
+  def predict(self, X):
+      xSize = X.size / 6
+      Y = np.zeros((xSize, 1))
+      for i in range(xSize):
+        entry = X[i]
+        countObservedBiasCorrected = entry[4]
+        countExpectedPusm = entry[5]
+        if (countObservedBiasCorrected < 0.5 * countExpectedPusm):
+            Y[i][0] = 2 #UNTRUSTED
+        elif (countObservedBiasCorrected > 1.5 * countExpectedPusm):
+            Y[i][0] = 0 #REPEAT
+        else:
+            Y[i][0] = 1 #TRUSTED
+      return Y
+      
+      
+class statistical:
+  def __init__(self):
+      pass
+
+  def fit(self, X, Y):
+      pass
+      
+  def predict(self, X):
+      xSize = X.size / 6
+      Y = np.zeros((xSize, 1))
+      for i in range(xSize):
+        entry = X[i]
+        zscore = entry[0]
+        if (zscore < -2):
+            Y[i][0] = 2 #UNTRUSTED
+        elif (zscore > 2):
+            Y[i][0] = 0 #REPEAT
+        else:
+            Y[i][0] = 1 #TRUSTED
+        pass   
+      return Y
+
 
 class classifier:
   def __init__(self):
@@ -31,11 +76,11 @@ class classifier:
     #self.modelnames = ['GaussianNB', 'DecisionTreeClassifier', 'DecisionTreeClassifier(balanced)', 'RandomForestClassifier', 'RandomForestClassifier(balanced)', 'LogisticRegression', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
     
     
-    self.models = [GaussianNB(), DecisionTreeClassifier(class_weight = 'balanced'), RandomForestClassifier(class_weight = 'balanced'), LogisticRegression(class_weight = 'balanced')]#, AdaBoostClassifier(), AdaBoostClassifier(DecisionTreeClassifier(class_weight = 'balanced'))]
-    self.modelnames = ['GaussianNB', 'DecisionTreeClassifier', 'RandomForestClassifier', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
+    self.models = [naive(), statistical(), GaussianNB(), DecisionTreeClassifier(class_weight = 'balanced'), RandomForestClassifier(class_weight = 'balanced'), LogisticRegression(class_weight = 'balanced')]#, AdaBoostClassifier(), AdaBoostClassifier(DecisionTreeClassifier(class_weight = 'balanced'))]
+    self.modelnames = ['naive', 'statistical', 'GaussianNB', 'DecisionTreeClassifier', 'RandomForestClassifier', 'LogisticRegression(balanced)']#, 'AdaBoostClassifier', 'AdaBoostClassifier(balanced)']
     
     
-    self.best_model = GaussianNB()
+    self.best_model = naive()
   
   def add(self, num1, num2):
     print "miau"

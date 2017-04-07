@@ -23,27 +23,31 @@
 using namespace std::placeholders;
 
 ErrorDetectionUnit::ErrorDetectionUnit() {
+	ecEval = NULL;
+}
+
+ErrorDetectionUnit::ErrorDetectionUnit(ErrorCorrectionEvaluation &ece) {
+	ecEval = &ece;
 }
 
 void ErrorDetectionUnit::addAlignmentsFile(const std::string &alignmentFilePath) {
 	alignmentsFiles.push_back(alignmentFilePath);
-	outFilesCorrectedReads.push_back(std::ofstream(alignmentFilePath + ".trueReads.fasta"));
-	outFilesCorrections.push_back(std::ofstream(alignmentFilePath + ".trueCorrections.txt", std::ios::binary));
-	//BAMIterator it(alignmentFilePath, genome);
+	outFilesCorrectedReads.push_back(std::ofstream(alignmentFilePath + ".trueReads.fastq"));
+	//outFilesCorrections.push_back(std::ofstream(alignmentFilePath + ".trueCorrections.txt", std::ios::binary));
 	iterators.push_back(std::make_unique<BAMIterator>(alignmentFilePath));
 
-	cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
-	oarchive(iterators[iterators.size() - 1]->getNumReadsTotalMapped());
+	//cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
+	//oarchive((unsigned long long) iterators[iterators.size() - 1]->getNumReadsTotalUniqueMapped());
 }
 
 void ErrorDetectionUnit::addAlignmentsFile(const std::string &alignmentFilePath, const std::string &outputPath) {
 	alignmentsFiles.push_back(alignmentFilePath);
-	outFilesCorrectedReads.push_back(std::ofstream(outputPath + "trueReads.fasta"));
-	outFilesCorrections.push_back(std::ofstream(outputPath + "trueCorrections.txt", std::ios::binary));
+	outFilesCorrectedReads.push_back(std::ofstream(outputPath + "trueReads.fastq"));
+    //outFilesCorrections.push_back(std::ofstream(outputPath + "trueCorrections.txt", std::ios::binary));
 	iterators.push_back(std::make_unique<BAMIterator>(alignmentFilePath));
 
-	cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
-	oarchive(iterators[iterators.size() - 1]->getNumReadsTotalMapped());
+	//cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
+	//oarchive((unsigned long long) iterators[iterators.size() - 1]->getNumReadsTotalUniqueMapped());
 }
 
 void ErrorDetectionUnit::correctReads(const seqan::Dna5String &reference) {
@@ -56,10 +60,18 @@ void ErrorDetectionUnit::correctReads(const seqan::Dna5String &reference) {
 			if (alignedRead.records.size() == 1) {
 				CorrectedReadAligned cra = alignedRead.retrieveCorrectedRead(reference);
 				outFilesCorrectedReads[i] << cra.correctedRead << "\n";
+				
+				for (size_t j = 0; j < observers.size(); ++j) {
+					observers[j]->checkAligned(cra);
+				}
+				
+				if (ecEval != NULL) {
+					ecEval->checkAligned(cra);
+				}
+				
 				//if (cra.corrections.size() > 0) {
-
-				cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
-				oarchive(cra);
+					//cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
+					//oarchive(cra);
 				//}
 			}
 
@@ -70,7 +82,11 @@ void ErrorDetectionUnit::correctReads(const seqan::Dna5String &reference) {
 			}
 		}
 		outFilesCorrectedReads[i].close();
-		outFilesCorrections[i].close();
+		//outFilesCorrections[i].close();
+	}
+	
+	for (size_t j = 0; j < observers.size(); ++j) {
+		observers[j]->finalize();
 	}
 }
 
@@ -85,7 +101,11 @@ void ErrorDetectionUnit::correctReadsMultithreaded(const seqan::Dna5String &refe
 
 	for (size_t i = 0; i < alignmentsFiles.size(); ++i) {
 		outFilesCorrectedReads[i].close();
-		outFilesCorrections[i].close();
+		//outFilesCorrections[i].close();
+	}
+	
+	for (size_t j = 0; j < observers.size(); ++j) {
+		observers[j]->finalize();
 	}
 }
 
@@ -110,6 +130,10 @@ void ErrorDetectionUnit::consumeData(std::vector<ReadWithAlignments> &buffer, si
 		std::string correctedReadString;
 		std::string craString;
 
+		for (size_t j = 0; j < observers.size(); ++j) {
+			observers[j]->checkAligned(cra);
+		}
+
 		std::stringstream ss;
 		ss << cra.correctedRead;
 		correctedReadString = ss.str();
@@ -118,8 +142,12 @@ void ErrorDetectionUnit::consumeData(std::vector<ReadWithAlignments> &buffer, si
 
 		outFilesCorrectedReads[consumerId / consumersPerFile] << correctedReadString << "\n";
 		//if (cra.corrections.size() > 0) {
-		cereal::BinaryOutputArchive oarchive(outFilesCorrections[consumerId / consumersPerFile]);
-		oarchive(cra);
+			//cereal::BinaryOutputArchive oarchive(outFilesCorrections[consumerId / consumersPerFile]);
+			//oarchive(cra);
 		//}
 	}
+}
+
+void ErrorDetectionUnit::addObserver(ErrorProfileUnit &epuObs) {
+	observers.push_back(&epuObs);
 }

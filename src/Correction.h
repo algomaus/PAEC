@@ -17,23 +17,24 @@
 class Correction {
 public:
 	Correction();
-	Correction(size_t pos, const std::string &from, const std::string &to, double prob);
-	Correction(size_t pos, const std::string &from, const std::string &to);
-	Correction(size_t pos, const std::string &from, const std::string &to, const ErrorType &errorType);
-	Correction(size_t pos, const std::string &from, const std::string &to, double prob, const ErrorType &errorType);
+	Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, double prob);
+	Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to);
+	Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, const ErrorType &errorType);
+	Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, double prob, const ErrorType &errorType);
 	std::string toString() const;
 
-	size_t positionInRead; // position in the original read
+	size_t positionInRead; // position in the corrected read
 	std::string originalBases;
 	std::string correctedBases;
 	double correctionProbability;
 	ErrorType type;
+	size_t originalReadPos; // position in the original read
 
 	ErrorType inferErrorType(const std::string &from, const std::string &to);
 
 	template<class Archive>
 	void serialize(Archive & archive) {
-		archive(positionInRead, originalBases, correctedBases, correctionProbability, type); // serialize things by passing them to the archive
+		archive(positionInRead, originalReadPos, originalBases, correctedBases, correctionProbability, type); // serialize things by passing them to the archive
 	}
 };
 

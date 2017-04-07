@@ -25,10 +25,11 @@ public:
 	double progress();
 	size_t getNumReadsTotal();
 	size_t getNumReadsTotalMapped();
+	unsigned long long getNumReadsTotalUniqueMapped();
 private:
 	void countNumberOfReads(const std::string &alignmentFilename);
 	seqan::BamFileIn bamFileIn;
-	size_t readsLeft; size_t numReadsTotal; size_t numReadsTotalMapped;
+	size_t readsLeft; size_t numReadsTotal; size_t numReadsTotalMapped; unsigned long long numReadsTotalUniqueMapped;
 
 	std::vector<seqan::BamAlignmentRecord> records;seqan::CharString currentReadName;
 };

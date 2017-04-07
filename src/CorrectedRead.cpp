@@ -46,36 +46,36 @@ void CorrectedRead::applyCorrection(const ErrorType &type, size_t posInCorrected
 	//std::cout << "correctedRead.sequence[posInCorrectedRead]: " << correctedRead.sequence[posInCorrectedRead] << "\n";
 	std::string toBases = "";
 	if (type == ErrorType::INSERTION) {
-		applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::INSERTION));
+		applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::INSERTION));
 	} else if (type == ErrorType::SUB_FROM_A) {
 		toBases += 'A';
-		applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::SUB_FROM_A));
+		applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::SUB_FROM_A));
 	} else if (type == ErrorType::SUB_FROM_C) {
 		toBases += 'C';
-		applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::SUB_FROM_C));
+		applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::SUB_FROM_C));
 	} else if (type == ErrorType::SUB_FROM_G) {
 		toBases += 'G';
-		applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::SUB_FROM_G));
+		applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::SUB_FROM_G));
 	} else if (type == ErrorType::SUB_FROM_T) {
 		toBases += 'T';
-		applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::SUB_FROM_T));
+		applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::SUB_FROM_T));
 	} else {
 		toBases += fromBases;
 		if (type == ErrorType::DEL_OF_A) {
 			toBases += 'A';
-			applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::DEL_OF_A));
+			applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::DEL_OF_A));
 		} else if (type == ErrorType::DEL_OF_C) {
 			toBases += 'C';
-			applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::DEL_OF_C));
+			applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::DEL_OF_C));
 		} else if (type == ErrorType::DEL_OF_G) {
 			toBases += 'G';
-			applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::DEL_OF_G));
+			applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::DEL_OF_G));
 		} else if (type == ErrorType::DEL_OF_T) {
 			toBases += 'T';
-			applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::DEL_OF_T));
+			applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::DEL_OF_T));
 		} else { // deletion of multiple bases or a chimeric break
 			toBases += '_';
-			applyCorrection(Correction(posInCorrectedRead, fromBases, toBases, ErrorType::MULTIDEL));
+			applyCorrection(Correction(posInCorrectedRead, originalPositions[posInCorrectedRead], fromBases, toBases, ErrorType::MULTIDEL));
 		}
 	}
 	assert(correctedRead.sequence.size() == correctedRead.quality.size());

@@ -10,8 +10,6 @@
 
 // TODO: Adapt the count in the reference genome to also deal with the special case of a circular genome
 
-#define MIN_TRUSTED_COUNT 2
-
 CoverageBiasUnit::CoverageBiasUnit() {
 	minKmerSize = 1;
 	genomeSize = 1;
@@ -99,7 +97,14 @@ void CoverageBiasUnit::learnBiasFromReferenceAlignment(const seqan::Dna5String &
 	while (it.hasReadsLeft()) {
 		std::vector<ReadWithAlignments> readsBuffer = it.next(100);
 		for (ReadWithAlignments read : readsBuffer) {
-			for (seqan::BamAlignmentRecord record : read.records) {
+			if (read.records.size() > 1) continue;
+
+			size_t intervalStart = read.records[0].beginPos;
+			size_t intervalEnd =  read.records[0].beginPos + length(read.records[0].seq) - 1;
+
+			//std::cout << "Added interval (" << intervalStart << "," << intervalEnd << ") of length " << cra.endPos - cra.beginPos + 1 << "\n";
+
+			/*for (seqan::BamAlignmentRecord record : read.records) {
 				if (!hasFlagUnmapped(record)) {
 					size_t intervalStart = record.beginPos;
 					size_t intervalEnd = intervalStart + length(record.seq) - 1;
@@ -108,7 +113,9 @@ void CoverageBiasUnit::learnBiasFromReferenceAlignment(const seqan::Dna5String &
 					assert(intervalEnd <= length(referenceGenome));
 					intervals.push_back(Interval<double>(intervalStart, intervalEnd, 1.0 / read.records.size()));
 				}
-			}
+			}*/
+
+			intervals.push_back(Interval<double>(intervalStart, intervalEnd, 1.0 / read.records.size()));
 		}
 	}
 
@@ -153,7 +160,7 @@ void CoverageBiasUnit::learnBiasFromReferenceAlignment(const seqan::Dna5String &
 			countObserved += coveringIntervals[i].value;
 		}
 
-		if (countObserved > MIN_TRUSTED_COUNT) { // if this condition is left out, the PacBio dataset will get a median coverage bias of 0.
+		if (countObserved > 0) {
 			double countExpected = pusm->expectedCount(kmerString).first;
 			countExpected *= occRef;
 			double bias = countObserved / countExpected;
@@ -221,7 +228,7 @@ void CoverageBiasUnit::learnBiasFromReferenceMatches(const seqan::Dna5String &re
 		double gc = (double) numGC / minKmerSize;
 		size_t gcIndex = gc / gc_step;
 		size_t countObserved = readsCounter.countKmer(kmerString);
-		if (countObserved > MIN_TRUSTED_COUNT) { // if this condition is left out, the PacBio dataset will get a median coverage bias of 0.
+		if (countObserved > 0) {
 			double countExpected = pusm->expectedCount(kmerString).first;
 			countExpected *= occRef;
 			double bias = (double) countObserved / countExpected;
@@ -255,8 +262,8 @@ void CoverageBiasUnit::learnBiasFromReferenceMatches(const seqan::Dna5String &re
 	std::cout << "Finished learning coverage biases from reference genome and read dataset.\n";
 }
 
-void CoverageBiasUnit::learnBiasFromReadsOnly(const std::string &readsFilePath,
-		KmerCounter &readsCounter, const std::unordered_map<size_t, size_t> &readLengths) {
+void CoverageBiasUnit::learnBiasFromReadsOnly(const std::string &readsFilePath, KmerCounter &readsCounter,
+		const std::unordered_map<size_t, size_t> &readLengths) {
 	// go through all reads, go through all k-mers in those reads, for all unvisited k-mers update the coverage bias stuff
 	if (covBiasType == CoverageBiasType::IGNORE_BIAS)
 		return;
@@ -275,21 +282,22 @@ void CoverageBiasUnit::learnBiasFromReadsOnly(const std::string &readsFilePath,
 		std::vector<FASTQRead> reads = it.next(100);
 		for (FASTQRead read : reads) {
 			std::string seq = read.sequence;
-			for (size_t i = 0; i < seq.size() - minKmerSize; ++i) {
+			for (int i = 0; i < (int) seq.size() - (int) minKmerSize; ++i) {
 				std::string kmer = read.sequence.substr(i, minKmerSize);
 				if (visitedKmers.find(kmer) == visitedKmers.end()) {
 
 					double gc = 0;
-					for (size_t j = 0; j < kmer.size(); ++i) {
-						if (kmer[i] == 'G' || kmer[i] == 'C') {
+					for (size_t j = 0; j < kmer.size(); ++j) {
+						if (kmer[j] == 'G' || kmer[j] == 'C') {
 							gc++;
 						}
 					}
 					gc = gc / kmer.size();
 					size_t gcIndex = gc / gc_step;
 					size_t countObserved = readsCounter.countKmer(kmer);
-					if (countObserved > MIN_TRUSTED_COUNT) { // if this condition is left out, the PacBio dataset will get a median coverage bias of 0.
-						double countExpected = pusm->expectedCount(kmer).first;
+					double countExpected = pusm->expectedCount(kmer).first;
+					if (countObserved >= countExpected * 0.2) { // if this condition is left out, the coverage biases will be very low due to erroneous k-mers
+
 						double bias = (double) countObserved / countExpected;
 						allBiases[gcIndex].push_back(bias);
 					}
@@ -334,6 +342,7 @@ void CoverageBiasUnit::fixEmptyBiases() {
 					if (biases[i] != 0.0) {
 						foundNonZero = true;
 						biases[biases.size() - 1] = biases[i];
+						break;
 					}
 				}
 				if (!foundNonZero) {
@@ -357,6 +366,7 @@ void CoverageBiasUnit::fixEmptyBiases() {
 					if (biases[i] != 0.0) {
 						foundNonZero = true;
 						biases[0] = biases[i];
+						break;
 					}
 				}
 				if (!foundNonZero) {

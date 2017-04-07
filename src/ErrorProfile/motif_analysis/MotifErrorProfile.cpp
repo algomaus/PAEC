@@ -17,7 +17,8 @@
 #include "../../AlignedInformation/CorrectionAligned.h"
 #include "../../Correction.h"
 
-MotifErrorProfile::MotifErrorProfile(KmerCounter &kmerCounter) : counter(kmerCounter) {
+MotifErrorProfile::MotifErrorProfile(KmerCounter &kmerCounter) :
+		counter(kmerCounter) {
 	finalized = false;
 	motifTree = MotifTree(MAX_MOTIF_SIZE);
 }
@@ -40,7 +41,7 @@ void MotifErrorProfile::check(const CorrectedRead &corrRead, double acceptProb) 
 	finalized = false;
 
 	for (Correction corr : corrRead.corrections) {
-		updateMotifData(corr.positionInRead, corrRead.originalRead.sequence, corr.type);
+		updateMotifData(corr.originalReadPos, corrRead.originalRead.sequence, corr.type);
 		assert(corr.type != ErrorType::CORRECT && corr.type != ErrorType::NODEL);
 	}
 }
@@ -49,7 +50,7 @@ void MotifErrorProfile::checkAligned(const CorrectedReadAligned &corrRead, doubl
 	finalized = false;
 
 	for (CorrectionAligned corr : corrRead.alignedCorrections) {
-		updateMotifData(corr.correction.positionInRead, corrRead.originalRead.sequence, corr.correction.type);
+		updateMotifData(corr.correction.originalReadPos, corrRead.originalRead.sequence, corr.correction.type);
 		assert(corr.correction.type != ErrorType::CORRECT && corr.correction.type != ErrorType::NODEL);
 	}
 }
@@ -85,8 +86,8 @@ std::unordered_map<ErrorType, double> MotifErrorProfile::getErrorProbabilitiesFi
 std::unordered_map<ErrorType, double> MotifErrorProfile::getErrorProbabilities(const FASTQRead &read,
 		size_t positionInRead) {
 	if (read.sequence[positionInRead] == '_') {
-			throw std::runtime_error("Invalid k-mer!");
-		}
+		throw std::runtime_error("Invalid k-mer!");
+	}
 	if (finalized) {
 		return getErrorProbabilitiesFinalized(read, positionInRead);
 	} else {
@@ -129,14 +130,15 @@ void MotifErrorProfile::loadErrorProfile(const std::string &filepath, KmerCounte
 }
 
 void MotifErrorProfile::plotErrorProfile() {
+
 	for (ErrorType type : errorTypeIterator()) {
 		for (size_t i = 0; i < motifTree.size(); ++i) {
 			std::string motifString = motifTree.indexToMotif(i);
 			// TODO: Decide on whether the whole motif error profile should be printed or just the significant parts of it
 			for (size_t j = 0; j < motifTree[i].entries.size(); ++j) {
 				if ((motifTree[i].entries[j].zScore[type] >= 1) || (motifTree[i].entries[j].zScore[type] <= -1)) {
-					std::cout << "Motif " << motifString << " with position: " << j << " has ZScore "
-							<< motifTree[i].entries[j].zScore[type] << " for type " << type << "\n";
+					std::cout << motifTree[i].entries[j].zScore[type] << "; " << "Motif " << motifString
+							<< " with position: " << j << " for type " << type << "\n";
 				}
 			}
 		}

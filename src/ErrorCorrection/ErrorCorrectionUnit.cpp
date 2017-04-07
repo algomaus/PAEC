@@ -16,9 +16,11 @@
 #include "../CorrectedRead.h"
 
 ErrorCorrectionUnit::ErrorCorrectionUnit() {
+	ecEval = NULL;
 }
 
-ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu, bool correctIndels) {
+ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileUnit &epu, KmerClassificationUnit &kcu,
+		bool correctIndels, ErrorCorrectionEvaluation &ece) {
 	if (type == ErrorCorrectionType::KMER_BASED) {
 		correctRead = std::bind(correctRead_KmerBased, _1, std::ref(epu), std::ref(kcu), correctIndels);
 	} else if (type == ErrorCorrectionType::NAIVE) {
@@ -26,26 +28,27 @@ ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileU
 	} else {
 		throw std::runtime_error("Unclear error correction type");
 	}
+	ecEval = &ece;
 }
 
 void ErrorCorrectionUnit::addReadsFile(const std::string &filepath) {
 	readFiles.push_back(filepath);
 	outFilesCorrectedReads.push_back(std::ofstream(filepath + ".correctedReads.fastq"));
-	outFilesCorrections.push_back(std::ofstream(filepath + ".corrections.txt"));
+	//outFilesCorrections.push_back(std::ofstream(filepath + ".corrections.txt"));
 	iterators.push_back(std::make_unique<FASTQModifiedIterator>(filepath));
 
-	cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
-	oarchive(iterators[iterators.size() - 1]->numReadsLeft());
+	//cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
+	//oarchive(iterators[iterators.size() - 1]->numReadsLeft());
 }
 
 void ErrorCorrectionUnit::addReadsFile(const std::string &filepath, const std::string &outputPath) {
 	readFiles.push_back(filepath);
 	outFilesCorrectedReads.push_back(std::ofstream(outputPath + "correctedReads.fastq"));
-	outFilesCorrections.push_back(std::ofstream(outputPath + "corrections.txt"));
+	//outFilesCorrections.push_back(std::ofstream(outputPath + "corrections.txt"));
 	iterators.push_back(std::make_unique<FASTQModifiedIterator>(filepath));
 
-	cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
-	oarchive(iterators[iterators.size() - 1]->numReadsLeft());
+	//cereal::BinaryOutputArchive oarchive(outFilesCorrections[outFilesCorrections.size() - 1]);
+	//oarchive(iterators[iterators.size() - 1]->numReadsLeft());
 }
 
 void ErrorCorrectionUnit::correctReads() {
@@ -55,12 +58,19 @@ void ErrorCorrectionUnit::correctReads() {
 			FASTQRead fastqRead = iterators[i]->next();
 			CorrectedRead cr = correctRead(fastqRead);
 			if (cr.correctedRead.sequence.empty()) {
-				throw std::runtime_error("The corrected read is empty!");
+				//throw std::runtime_error("The corrected read is empty!");
+			} else {
+				outFilesCorrectedReads[i] << cr.correctedRead << "\n";
+
+				for (size_t j = 0; j < observers.size(); ++j) {
+					observers[j]->check(cr);
+				}
+				ecEval->check(cr);
 			}
-			outFilesCorrectedReads[i] << cr.correctedRead << "\n";
+
 			//if (correctedRead.corrections.size() > 0) {
-			cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
-			oarchive(cr);
+			//cereal::BinaryOutputArchive oarchive(outFilesCorrections[i]);
+			//oarchive(cr);
 			//}
 
 			double progress = iterators[i]->progress();
@@ -70,8 +80,13 @@ void ErrorCorrectionUnit::correctReads() {
 			}
 		}
 		outFilesCorrectedReads[i].close();
-		outFilesCorrections[i].close();
+		//outFilesCorrections[i].close();
 	}
+
+	for (size_t j = 0; j < observers.size(); ++j) {
+		observers[j]->finalize();
+	}
+	ecEval->finalize();
 }
 
 void ErrorCorrectionUnit::correctReadsMultithreaded() {
@@ -84,7 +99,11 @@ void ErrorCorrectionUnit::correctReadsMultithreaded() {
 
 	for (size_t i = 0; i < readFiles.size(); ++i) {
 		outFilesCorrectedReads[i].close();
-		outFilesCorrections[i].close();
+		//outFilesCorrections[i].close();
+	}
+
+	for (size_t j = 0; j < observers.size(); ++j) {
+		observers[j]->finalize();
 	}
 }
 
@@ -107,6 +126,10 @@ void ErrorCorrectionUnit::consumeData(std::vector<FASTQRead> &buffer, size_t con
 			throw std::runtime_error("The corrected read is empty!");
 		}
 
+		for (size_t j = 0; j < observers.size(); ++j) {
+			observers[j]->check(cr);
+		}
+
 		std::string correctedReadString;
 
 		std::stringstream ss;
@@ -117,8 +140,12 @@ void ErrorCorrectionUnit::consumeData(std::vector<FASTQRead> &buffer, size_t con
 
 		outFilesCorrectedReads[consumerId / consumersPerFile] << correctedReadString + "\n";
 		//if (cra.corrections.size() > 0) {
-		cereal::BinaryOutputArchive oarchive(outFilesCorrections[consumerId / consumersPerFile]);
-		oarchive(cr);
+		//cereal::BinaryOutputArchive oarchive(outFilesCorrections[consumerId / consumersPerFile]);
+		//oarchive(cr);
 		//}
 	}
+}
+
+void ErrorCorrectionUnit::addObserver(ErrorProfileUnit &epuObs) {
+	observers.push_back(&epuObs);
 }

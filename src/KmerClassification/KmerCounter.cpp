@@ -66,11 +66,11 @@ double KmerCounter::countKmerApproximate(const std::string &kmer,
 }
 
 size_t KmerCounter::countKmerNoRC(const std::string &kmer) {
-	if ((kmer.size() < 19) && (buffer.find(kmer) != buffer.end())) {
+	if ((kmer.size() < 17) && (buffer.find(kmer) != buffer.end())) {
 		return buffer[kmer];
 	}
 	size_t countOriginal = sdsl::count(fm_index, kmer.begin(), kmer.end());
-	if (kmer.size() < 19) {
+	if (kmer.size() < 17 && countOriginal >= 50) {
 		buffer[kmer] = countOriginal;
 	}
 	return countOriginal;
@@ -106,7 +106,7 @@ std::string KmerCounter::kmerAfterError(const std::string &kmer, ErrorType error
 // TODO: This currently only accounts for single-base errors.
 double KmerCounter::countKmerNoRCApproximate(const std::string &kmer,
 		const std::shared_ptr<ErrorProfileUnit> &errorProfile) {
-	if ((kmer.size() < 19) && (bufferApprox.find(kmer) != bufferApprox.end())) {
+	if ((kmer.size() < 17) && (bufferApprox.find(kmer) != bufferApprox.end())) {
 		return bufferApprox[kmer];
 	}
 	double countOriginal = sdsl::count(fm_index, kmer.begin(), kmer.end());
@@ -125,7 +125,7 @@ double KmerCounter::countKmerNoRCApproximate(const std::string &kmer,
 	}
 	countTotal += exp(probCorrect) * countOriginal;
 
-	if (kmer.size() < 19) {
+	if (kmer.size() < 17 && countTotal >= 50) {
 		bufferApprox[kmer] = countTotal;
 	}
 	return countTotal;

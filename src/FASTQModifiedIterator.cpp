@@ -33,7 +33,7 @@ FASTQModifiedIterator::FASTQModifiedIterator(const std::string &readsFilename) {
 	numReadsTotal = countNumberOfReads(readsFilename);
 	readsLeft = numReadsTotal;
 
-	infileReads = std::ifstream (readsFilename);
+	infileReads = std::ifstream(readsFilename);
 
 	if (!infileReads.good()) {
 		std::cerr << "ERROR: Could not open " << readsFilename << std::endl;
@@ -47,7 +47,6 @@ bool FASTQModifiedIterator::hasReadsLeft() {
 size_t FASTQModifiedIterator::numReadsLeft() {
 	return readsLeft;
 }
-
 
 double FASTQModifiedIterator::progress() {
 	return ((numReadsTotal - readsLeft) / ((double) numReadsTotal)) * 100;
@@ -67,6 +66,14 @@ FASTQRead FASTQModifiedIterator::next() {
 	std::getline(infileReads, seq);
 	std::getline(infileReads, junk);
 	std::getline(infileReads, qual);
+
+	if (id.find("/") != std::string::npos) {
+		id = id.substr(0, id.find("/"));
+	}
+
+	if (id.find(" ") != std::string::npos) {
+		id = id.substr(0, id.find(" "));
+	}
 
 	fastqRead.id = id;
 	fastqRead.sequence = seq;

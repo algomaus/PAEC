@@ -15,6 +15,7 @@
 CorrectedReadAligned::CorrectedReadAligned() :
 		CorrectedRead() {
 	beginPos = 0;
+	endPos = 0;
 }
 
 std::string CorrectedReadAligned::toString() const {
@@ -22,9 +23,6 @@ std::string CorrectedReadAligned::toString() const {
 	if (correctedRead.sequence.size() > 0) {
 		ss << originalRead << "\n" << correctedRead << "\n";
 		ss << beginPos; // << " " << positionOffset << " " << alignedCorrections.size();
-		for (CorrectionAligned ca : alignedCorrections) {
-			ss << "\n" << ca;
-		}
 	}
 	return ss.str();
 }
@@ -32,6 +30,7 @@ std::string CorrectedReadAligned::toString() const {
 CorrectedReadAligned::CorrectedReadAligned(const FASTQRead &original, size_t mappingPos) :
 		CorrectedRead(original) {
 	beginPos = mappingPos;
+	endPos = 0;
 }
 
 // TODO: Correct chimeric breaks, too! This is a bit uglier because it means the read has to be splitted.

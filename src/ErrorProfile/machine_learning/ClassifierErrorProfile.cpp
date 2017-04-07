@@ -60,8 +60,7 @@ ClassifierErrorProfile::ClassifierErrorProfile(const std::string &plotPath, Cove
 	std::ifstream test2(trainNextGap);
 	if (test1.good() && test2.good()) {
 		alreadyHasTrainingData = true;
-		std::cout
-				<< "Training data files for the ClassifierErrorProfile are already there! Great, skipping this part then.\n";
+		std::cout << "Training data files for the ClassifierErrorProfile are already there! Great, skipping this part then, if needed.\n";
 	}
 
 	if (!alreadyHasTrainingData) {
@@ -99,9 +98,9 @@ ClassifierErrorProfile::ClassifierErrorProfile(const std::string &plotPath, Cove
 	 Py_DECREF(sys);
 	 Py_DECREF(path);*/
 
-	PyObject* module = PyImport_ImportModule("blackbox");
+	PyObject* module = PyImport_ImportModule((char*) "blackbox");
 	assert(module != NULL);
-	PyObject* klass = PyObject_GetAttrString(module, "classifier");
+	PyObject* klass = PyObject_GetAttrString(module, (char*) "classifier");
 	assert(klass != NULL);
 	classifierNextGap = PyInstance_New(klass, NULL, NULL);
 	assert(classifierNextGap != NULL);
@@ -130,8 +129,16 @@ ClassifierErrorProfile::ClassifierErrorProfile(const std::string &plotPath, Cove
 	for (size_t i = 0; i < featureNamesCurrentBase.size(); ++i) {
 		PyList_SetItem(pyFeatureNamesCurrentBase, i, PyString_FromString(featureNamesCurrentBase[i].c_str()));
 	}
-	PyObject* pyResultCurrent = PyObject_CallMethod(classifierNextGap, "set_features", "O", pyFeatureNamesNextGap);
-	PyObject* pyResultNext = PyObject_CallMethod(classifierCurrentBase, "set_features", "O", pyFeatureNamesCurrentBase);
+	PyObject* pyResultCurrent = PyObject_CallMethod(classifierNextGap, (char*) "set_features", (char*) "O",
+			pyFeatureNamesNextGap);
+	if (!pyResultCurrent) {
+		throw std::runtime_error("set_features did not work");
+	}
+	PyObject* pyResultNext = PyObject_CallMethod(classifierCurrentBase, (char*) "set_features", (char*) "O",
+			pyFeatureNamesCurrentBase);
+	if (!pyResultNext) {
+		throw std::runtime_error("set_features did not work");
+	}
 
 	// set the class id's
 	PyObject* pyClassNamesNextGap = PyList_New(feNextGap->getClasses().size());
@@ -148,8 +155,9 @@ ClassifierErrorProfile::ClassifierErrorProfile(const std::string &plotPath, Cove
 		PyList_SetItem(pyClassNamesCurrentBase, idx, PyInt_FromLong(errorTypeToNumber(feCurrentBase->getClasses()[i])));
 		idx++;
 	}
-	pyResultCurrent = PyObject_CallMethod(classifierNextGap, "set_classes", "O", pyClassNamesNextGap);
-	pyResultNext = PyObject_CallMethod(classifierCurrentBase, "set_classes", "O", pyClassNamesCurrentBase);
+	pyResultCurrent = PyObject_CallMethod(classifierNextGap, (char*) "set_classes", (char*) "O", pyClassNamesNextGap);
+	pyResultNext = PyObject_CallMethod(classifierCurrentBase, (char*) "set_classes", (char*) "O",
+			pyClassNamesCurrentBase);
 }
 
 ClassifierErrorProfile::~ClassifierErrorProfile() {
@@ -209,8 +217,10 @@ void ClassifierErrorProfile::loadErrorProfile(const std::string &filepath, KmerC
 
 	std::string bestClassifierCurrentBaseFilepath = filepath + ".bestClassifier.currentBase.joblib.pkl";
 	std::string bestClassifierNextGapFilepath = filepath + ".bestClassifier.nextGap.joblib.pkl";
-	PyObject_CallMethod(classifierCurrentBase, "load_classifier", "s", bestClassifierCurrentBaseFilepath.c_str());
-	PyObject_CallMethod(classifierNextGap, "load_classifier", "s", bestClassifierNextGapFilepath.c_str());
+	PyObject_CallMethod(classifierCurrentBase, (char*) "load_classifier", (char*) "s",
+			bestClassifierCurrentBaseFilepath.c_str());
+	PyObject_CallMethod(classifierNextGap, (char*) "load_classifier", (char*) "s",
+			bestClassifierNextGapFilepath.c_str());
 }
 void ClassifierErrorProfile::storeErrorProfile(const std::string &filepath) {
 	std::ofstream outfile(filepath, std::ios::binary);
@@ -219,8 +229,10 @@ void ClassifierErrorProfile::storeErrorProfile(const std::string &filepath) {
 
 	std::string bestClassifierCurrentBaseFilepath = filepath + ".bestClassifier.currentBase.joblib.pkl";
 	std::string bestClassifierNextGapFilepath = filepath + ".bestClassifier.nextGap.joblib.pkl";
-	PyObject_CallMethod(classifierCurrentBase, "store_classifier", "s", bestClassifierCurrentBaseFilepath.c_str());
-	PyObject_CallMethod(classifierNextGap, "store_classifier", "s", bestClassifierNextGapFilepath.c_str());
+	PyObject_CallMethod(classifierCurrentBase, (char*) "store_classifier", (char*) "s",
+			bestClassifierCurrentBaseFilepath.c_str());
+	PyObject_CallMethod(classifierNextGap, (char*) "store_classifier", (char*) "s",
+			bestClassifierNextGapFilepath.c_str());
 }
 void ClassifierErrorProfile::plotErrorProfile() {
 	// TODO ...
@@ -334,7 +346,7 @@ void ClassifierErrorProfile::check(const CorrectedRead &corrRead, double acceptP
 	for (Correction corr : corrRead.corrections) {
 		double roll = distribution(generator);
 		if (roll <= acceptProb) {
-			processCorrection(corrRead.originalRead, corr.positionInRead, corr.type, nodel, correct);
+			processCorrection(corrRead.originalRead, corr.originalReadPos, corr.type, nodel, correct);
 		}
 	}
 
@@ -373,7 +385,7 @@ void ClassifierErrorProfile::checkAligned(const CorrectedReadAligned &corrRead, 
 		double roll = distribution(generator);
 		if (roll <= acceptProb) {
 			const CorrectionAligned &ca = corrRead.alignedCorrections[i];
-			processCorrection(corrRead.originalRead, ca.correction.positionInRead, ca.correction.type, nodel, correct);
+			processCorrection(corrRead.originalRead, ca.correction.originalReadPos, ca.correction.type, nodel, correct);
 		}
 	}
 
@@ -402,11 +414,12 @@ void ClassifierErrorProfile::checkAligned(const CorrectedReadAligned &corrRead, 
 }
 
 void ClassifierErrorProfile::finalize() {
-	PyObject* res = PyObject_CallMethod(classifierCurrentBase, "set_csv_file", "s", trainCurrentBase.c_str());
+	PyObject* res = PyObject_CallMethod(classifierCurrentBase, (char*) "set_csv_file", (char*) "s",
+			trainCurrentBase.c_str());
 	if (!res) {
 		throw std::runtime_error("classifierCurrentBase set_csv_file went wrong");
 	}
-	res = PyObject_CallMethod(classifierNextGap, "set_csv_file", "s", trainNextGap.c_str());
+	res = PyObject_CallMethod(classifierNextGap, (char*) "set_csv_file", (char*) "s", trainNextGap.c_str());
 	if (!res) {
 		throw std::runtime_error("classifierNextGap set_csv_file went wrong");
 	}
@@ -433,8 +446,9 @@ std::unordered_map<ErrorType, double> ClassifierErrorProfile::getErrorProbabilit
 	// call the classifiers
 	std::vector<double> logProbaCurrent;
 	std::vector<double> logProbaNext;
-	PyObject* pyResultCurrent = PyObject_CallMethod(classifierCurrentBase, "proba", "O", pyFeaturesCurrent);
-	PyObject* pyResultNext = PyObject_CallMethod(classifierNextGap, "proba", "O", pyFeaturesNext);
+	PyObject* pyResultCurrent = PyObject_CallMethod(classifierCurrentBase, (char*) "proba", (char*) "O",
+			pyFeaturesCurrent);
+	PyObject* pyResultNext = PyObject_CallMethod(classifierNextGap, (char*) "proba", (char*) "O", pyFeaturesNext);
 	for (int i = 0; i < PyList_Size(pyResultCurrent); ++i) {
 		logProbaCurrent.push_back(PyFloat_AsDouble(PyList_GetItem(pyResultCurrent, i)));
 	}
@@ -488,8 +502,9 @@ std::unordered_map<ErrorType, double> ClassifierErrorProfile::getErrorProbabilit
 	// call the classifiers
 	std::vector<double> logProbaCurrent;
 	std::vector<double> logProbaNext;
-	PyObject* pyResultCurrent = PyObject_CallMethod(classifierCurrentBase, "proba", "O", pyFeaturesCurrent);
-	PyObject* pyResultNext = PyObject_CallMethod(classifierNextGap, "proba", "O", pyFeaturesNext);
+	PyObject* pyResultCurrent = PyObject_CallMethod(classifierCurrentBase, (char*) "proba", (char*) "O",
+			pyFeaturesCurrent);
+	PyObject* pyResultNext = PyObject_CallMethod(classifierNextGap, (char*) "proba", (char*) "O", pyFeaturesNext);
 	for (int i = 0; i < PyList_Size(pyResultCurrent); ++i) {
 		logProbaCurrent.push_back(PyFloat_AsDouble(PyList_GetItem(pyResultCurrent, i)));
 	}

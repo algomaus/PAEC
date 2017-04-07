@@ -35,15 +35,26 @@ void BAMIterator::countNumberOfReads(const std::string &alignmentFilename) {
 		}
 		numReadsTotal++;
 	}
+	int countUnique = 1;
 	while (!atEnd(bamFileInReadCounting)) {
 		seqan::readRecord(record, bamFileInReadCounting);
 		if (record.qName != currentReadName) {
+			if (countUnique == 1) {
+				numReadsTotalUniqueMapped++;
+			}
+			countUnique = 1;
 			numReadsTotal++;
 			if (!hasFlagUnmapped(record)) {
 				numReadsTotalMapped++;
 			}
 			currentReadName = record.qName;
+		} else {
+			countUnique++;
 		}
+	}
+
+	if (countUnique == 1) {
+		numReadsTotalUniqueMapped++;
 	}
 
 	std::cout << "Finished counting reads. There are " << numReadsTotal << " reads in total.\n";
@@ -52,6 +63,7 @@ void BAMIterator::countNumberOfReads(const std::string &alignmentFilename) {
 BAMIterator::BAMIterator() {
 	numReadsTotal = 0;
 	numReadsTotalMapped = 0;
+	numReadsTotalUniqueMapped = 0;
 	readsLeft = 0;
 }
 
@@ -101,6 +113,7 @@ ReadWithAlignments BAMIterator::next() {
 			ReadWithAlignments alignedRead(records);
 			readsLeft--;
 			currentReadName = record.qName;
+
 			records.clear();
 			records.push_back(record);
 			return alignedRead;
@@ -135,3 +148,6 @@ size_t BAMIterator::getNumReadsTotalMapped() {
 	return numReadsTotalMapped;
 }
 
+unsigned long long BAMIterator::getNumReadsTotalUniqueMapped() {
+	return numReadsTotalUniqueMapped;
+}

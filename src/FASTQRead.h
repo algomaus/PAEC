@@ -30,7 +30,7 @@ public:
 };
 
 inline std::ostream& operator<<(std::ostream & os, const FASTQRead &read) {
-	os << "@" << read.id << "\n" << read.sequence << "\n+\n" << read.quality;
+	os << read.id << "\n" << read.sequence << "\n+\n" << read.quality;
 	return os;
 }
 

@@ -16,44 +16,78 @@ static const int MAX_KMER_SIZE = 35;
 
 class Dataset {
 public:
+	Dataset() {
+		numReads = 0;
+		genomeType = GenomeType::CIRCULAR;
+		genomeSize = 0;
+		minReadLength = 0;
+		hasQualityScores = false;
+		maxReadLength = 0;
+	}
+
 	Dataset(const std::string &sra) {
 		hasQualityScores = true;
 		if (sra == "SRR396537") {
-			readsOnlyFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_without_adapters.NonDup.readsOnly.txt";
-			readsFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_without_adapters.NonDup.fastq";
+			readsOnlyFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_without_adapters.fastq.readsOnly.txt";
+			readsFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_without_adapters.fastq";
 			referenceFileName = "data/e_coli_k12_mg1655/reference.fasta";
-			readAlignmentsFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_aln_with_md.sorted.bam";
+			readAlignmentsFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396537/SRR396537_without_adapters.sorted.bam";
 			plotPath = "plots/Illumina/SRR396537/SRR396537_";
-			kmerPlotPath = "plots/Illumina/kmers/SRR396537/SRR396537_";
 			genomeType = GenomeType::CIRCULAR;
 		} else if (sra == "SRR396536") {
-			readsOnlyFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_without_adapters.NonDup.readsOnly.txt";
-			readsFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_without_adapters.NonDup.fastq";
+			readsOnlyFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_without_adapters.fastq.readsOnly.txt";
+			readsFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_without_adapters.fastq";
 			referenceFileName = "data/e_coli_k12_mg1655/reference.fasta";
-			readAlignmentsFileName = "data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_aln_with_md.sorted.bam";
+			readAlignmentsFileName =
+					"data/e_coli_k12_mg1655/Illumina_Genome_Analyzer_IIx/Nextera/GA091120/SRR396536/SRR396536_without_adapters.sorted.bam";
 			plotPath = "plots/Illumina/SRR396536/SRR396536_";
-			kmerPlotPath = "plots/Illumina/kmers/SRR396536/SRR396536_";
 			genomeType = GenomeType::CIRCULAR;
-		} else if (sra == "ebola_simulated_pacbio") {
+		} else if (sra == "SRR1284073") {
+			readsOnlyFileName = "data/e_coli_k12_mg1655/PacBio/SRR1284073.fastq.readsOnly.txt";
+			readsFileName =
+					"data/e_coli_k12_mg1655/PacBio/SRR1284073.fastq";
+			referenceFileName = "data/e_coli_k12_mg1655/reference.fasta";
+			readAlignmentsFileName =
+					"data/e_coli_k12_mg1655/PacBio/SRR1284073.sorted.bam";
+			plotPath = "plots/PacBio/SRR1284073/SRR1284073_";
+			genomeType = GenomeType::CIRCULAR;
+		} else if (sra == "ebola_pacbio_simulated") {
 			readsOnlyFileName = "data/Simulated Datasets/Ebola/PacBio/ebola_pacbio_simulated.fastq.readsOnly.txt";
 			readsFileName = "data/Simulated Datasets/Ebola/PacBio/ebola_pacbio_simulated.fastq";
-			referenceFileName = "data/Simulated Datasets/Ebola/ebola.fasta";
+			referenceFileName = "data/Simulated Datasets/Ebola/reference.fasta";
 			readAlignmentsFileName = "data/Simulated Datasets/Ebola/PacBio/ebola_pacbio_simulated.bam";
-			plotPath = "plots/PacBio/ebola_simulated/ebola_simulated_";
-			kmerPlotPath = "plots/PacBio/kmers/ebola_simulated/ebola_simulated_";
-			//acceptProb = 0.25;
+			plotPath = "plots/PacBio/ebola_simulated/ebola_pacbio_simulated_";
 			genomeType = GenomeType::LINEAR;
-		} else if (sra == "ebola_simulated_illumina") {
+		} else if (sra == "ebola_illumina_simulated") {
 			readsOnlyFileName = "data/Simulated Datasets/Ebola/Illumina/ebola_illumina_simulated.fastq.readsOnly.txt";
 			readsFileName = "data/Simulated Datasets/Ebola/Illumina/ebola_illumina_simulated.fastq";
-			referenceFileName = "data/Simulated Datasets/Ebola/ebola.fasta";
+			referenceFileName = "data/Simulated Datasets/Ebola/reference.fasta";
 			readAlignmentsFileName = "data/Simulated Datasets/Ebola/Illumina/ebola_illumina_simulated.bam";
-			plotPath = "plots/Illumina/ebola_simulated/ebola_simulated_";
-			kmerPlotPath = "plots/Illumina/kmers/ebola_simulated/ebola_simulated_";
+			plotPath = "plots/Illumina/ebola_simulated/ebola_illumina_simulated_";
 			genomeType = GenomeType::LINEAR;
+		} else if (sra == "ecoli_pacbio_simulated") {
+			readsOnlyFileName = "data/Simulated Datasets/Ecoli/PacBio/ecoli_pacbio_simulated.fastq.readsOnly.txt";
+			readsFileName = "data/Simulated Datasets/Ecoli/PacBio/ecoli_pacbio_simulated.fastq";
+			referenceFileName = "data/Simulated Datasets/Ecoli/reference.fasta";
+			readAlignmentsFileName = "data/Simulated Datasets/Ecoli/PacBio/ecoli_pacbio_simulated.bam";
+			plotPath = "plots/PacBio/ecoli_simulated/ecoli_pacbio_simulated_";
+			genomeType = GenomeType::CIRCULAR;
+		} else if (sra == "ecoli_illumina_simulated") {
+			readsOnlyFileName = "data/Simulated Datasets/Ecoli/Illumina/ecoli_illumina_simulated.fastq.readsOnly.txt";
+			readsFileName = "data/Simulated Datasets/Ecoli/Illumina/ecoli_illumina_simulated.fastq";
+			referenceFileName = "data/Simulated Datasets/Ecoli/reference.fasta";
+			readAlignmentsFileName = "data/Simulated Datasets/Ecoli/Illumina/ecoli_illumina_simulated.bam";
+			plotPath = "plots/Illumina/ecoli_simulated/ecoli_illumina_simulated_";
+			genomeType = GenomeType::CIRCULAR;
 		} else {
 			throw "Unknown dataset!";
 		}
+		name = sra;
 		GenomeReader reader;
 		genome = reader.readGenome(referenceFileName);
 		genomeSize = length(genome);
@@ -64,7 +98,6 @@ public:
 	std::string readsFileName;
 	std::string readAlignmentsFileName;
 	std::string plotPath;
-	std::string kmerPlotPath;
 	seqan::Dna5String genome;
 	size_t genomeSize;
 	GenomeType genomeType;
@@ -75,6 +108,7 @@ public:
 	size_t numReads;
 	bool hasQualityScores;
 	double acceptProb = 1.0;
+	std::string name;
 private:
 	void countReadLengths() {
 		numReads = 0;

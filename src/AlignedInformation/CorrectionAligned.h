@@ -23,13 +23,3 @@ public:
 		archive(correction, positionInReference); // serialize things by passing them to the archive
 	}
 };
-
-inline std::ostream& operator<<(std::ostream & os, const CorrectionAligned &ca) {
-	os << std::to_string(ca.positionInReference) + "\n" + ca.correction.toString();
-	return os;
-}
-
-inline std::istream& operator>>(std::istream & is, CorrectionAligned &ca) {
-	is >> ca.positionInReference >> ca.correction;
-	return is;
-}

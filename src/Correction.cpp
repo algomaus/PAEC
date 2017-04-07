@@ -17,6 +17,7 @@ Correction::Correction() {
 	correctedBases = "";
 	correctionProbability = 1;
 	type = ErrorType::CORRECT;
+	originalReadPos = 0;
 }
 
 std::string Correction::toString() const {
@@ -37,40 +38,44 @@ std::string Correction::toString() const {
 	return ss.str();
 }
 
-Correction::Correction(size_t pos, const std::string &from, const std::string &to, double prob) {
+Correction::Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, double prob) {
 	assert(from != to);
 	positionInRead = pos;
 	originalBases = from;
 	correctedBases = to;
 	correctionProbability = prob;
 	type = inferErrorType(from, to);
+	originalReadPos = origPos;
 }
 
-Correction::Correction(size_t pos, const std::string &from, const std::string &to, double prob, const ErrorType &errorType) {
+Correction::Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, double prob, const ErrorType &errorType) {
 	assert(from != to);
 	positionInRead = pos;
 	originalBases = from;
 	correctedBases = to;
 	correctionProbability = prob;
 	type = errorType;
+	originalReadPos = origPos;
 }
 
-Correction::Correction(size_t pos, const std::string &from, const std::string &to, const ErrorType &errorType) {
+Correction::Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to, const ErrorType &errorType) {
 	assert(errorType == ErrorType::MULTIDEL || from != to);
 	positionInRead = pos;
 	originalBases = from;
 	correctedBases = to;
 	correctionProbability = 1;
 	type = errorType;
+	originalReadPos = origPos;
 }
 
-Correction::Correction(size_t pos, const std::string &from, const std::string &to) {
+Correction::Correction(size_t pos, size_t origPos, const std::string &from, const std::string &to) {
 	assert(from != to);
 	positionInRead = pos;
 	originalBases = from;
 	correctedBases = to;
 	correctionProbability = 1;
 	type = inferErrorType(from, to);
+	originalReadPos = origPos;
 }
 
 ErrorType Correction::inferErrorType(const std::string &from, const std::string &to) {

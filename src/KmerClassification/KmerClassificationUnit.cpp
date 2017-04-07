@@ -18,7 +18,12 @@ KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, Coverag
 	classificationType = type;
 	mlClassifier = NULL;
 	if (type == KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING) {
-		PyObject* module = PyImport_ImportModule("blackbox");
+		PyObject* module = PyImport_ImportModule("blackbox_kmer");
+		
+		if (!module) {
+			throw std::runtime_error("Could not import module");
+		}
+		
 		assert(module != NULL);
 		PyObject* klass = PyObject_GetAttrString(module, "classifier");
 		assert(klass != NULL);
@@ -35,7 +40,7 @@ KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, Coverag
 		for (size_t i = 0; i < featureNames.size(); ++i) {
 			PyList_SetItem(pyFeatureNames, i, PyString_FromString(featureNames[i].c_str()));
 		}
-		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier, "set_features", "O", pyFeatureNames);
+		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier, (char*) "set_features", (char*) "O", pyFeatureNames);
 		if (!pyResultCurrent) {
 			throw std::runtime_error("PYTHON: set_features failed");
 		}
@@ -45,7 +50,7 @@ KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, Coverag
 		for (size_t i = 0; i < 3; ++i) {
 			PyList_SetItem(pyClassIds, i, PyInt_FromLong(i));
 		}
-		pyResultCurrent = PyObject_CallMethod(mlClassifier, "set_classes", "O", pyClassIds);
+		pyResultCurrent = PyObject_CallMethod(mlClassifier, (char*) "set_classes", (char*) "O", pyClassIds);
 		if (!pyResultCurrent) {
 			throw std::runtime_error("PYTHON: set_classes failed");
 		}
@@ -55,7 +60,7 @@ KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, Coverag
 
 void KmerClassificationUnit::storeClassifier(const std::string &filename) {
 	if (classificationType == KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING) {
-		PyObject* res = PyObject_CallMethod(mlClassifier, "store_classifier", "s", filename.c_str());
+		PyObject* res = PyObject_CallMethod(mlClassifier, (char*) "store_classifier", (char*) "s", filename.c_str());
 		if (!res) {
 			throw std::runtime_error("PYTHON: store_classifier failed");
 		}
@@ -64,7 +69,7 @@ void KmerClassificationUnit::storeClassifier(const std::string &filename) {
 
 void KmerClassificationUnit::loadClassifier(const std::string &filename) {
 	if (classificationType == KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING) {
-		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier, "load_classifier", "s", filename.c_str());
+		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier, (char*) "load_classifier", (char*) "s", filename.c_str());
 		if (!pyResultCurrent) {
 			throw std::runtime_error("PYTHON: load_classifier failed");
 		}
@@ -98,7 +103,7 @@ void KmerClassificationUnit::trainClassifier(Dataset &ds, KmerCounter &genomeCou
 		}
 
 		std::cout << "Choosing the best classifier...\n";
-		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier, "set_csv_file", "s", outputPath.c_str());
+		PyObject* pyResultCurrent = PyObject_CallMethod(mlClassifier,  (char*) "set_csv_file", (char*) "s", outputPath.c_str());
 		if (!pyResultCurrent) {
 			throw std::runtime_error("PYTHON: set_csv_file failed");
 		}
@@ -319,7 +324,7 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 
 		int typeAsInt = -1;
 
-		PyObject* pyResult = PyObject_CallMethod(mlClassifier, "classify", "O", pyFeatures);
+		PyObject* pyResult = PyObject_CallMethod(mlClassifier, (char*) "classify", (char*) "O", pyFeatures);
 		if (!pyResult) {
 			throw std::runtime_error("PYTHON: classify failed. kmer was: " + kmer);
 		}
