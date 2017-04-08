@@ -45,7 +45,7 @@ void exitPython() {
 void processDataset(Dataset &ds) {
 	bool extendedCover = false; // do Step 2 of the error correction method or not
 	ComponentSetup cs(ds, CoverageBiasType::MEDIAN_BIAS_READS_ONLY,
-			KmerClassificationType::CLASSIFICATION_NAIVE, ErrorProfileType::OVERALL_STATS_ONLY,
+			KmerClassificationType::CLASSIFICATION_CHEATING, ErrorProfileType::MACHINE_LEARNING,
 			ErrorCorrectionType::KMER_BASED, extendedCover);
 
 	// extract errors from alignment
@@ -58,8 +58,10 @@ void processDataset(Dataset &ds) {
 	//cs.learnCoverageBias();
 	// train machine learning method for k-mer classification
 	//cs.trainKmerClassification();
+
 	// train error profile
-	//cs.trainErrorProfile();
+	cs.trainErrorProfile();
+
 	// correct reads
 	cs.correctReads();
 
@@ -83,11 +85,11 @@ int main() {
 	std::vector<Dataset> datasets;
 	//datasets.push_back(Dataset("ecoli_illumina_simulated"));
 	//datasets.push_back(Dataset("SRR396536"));
-	//datasets.push_back(Dataset("ebola_illumina_simulated"));
+	datasets.push_back(Dataset("ebola_illumina_simulated"));
 	//datasets.push_back(Dataset("ecoli_pacbio_simulated"));
 	//datasets.push_back(Dataset("SRR396537"));
 	//datasets.push_back(Dataset("ebola_pacbio_simulated"));
-	datasets.push_back(Dataset("SRR1284073"));
+	//datasets.push_back(Dataset("SRR1284073"));
 
 	for (size_t i = 0; i < datasets.size(); ++i) {
 		std::cout << "\n" << datasets[i].name << ":\n";

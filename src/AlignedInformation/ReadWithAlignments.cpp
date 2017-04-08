@@ -391,6 +391,12 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 			}
 			
 			if (baseInRead != baseInGenome) {
+				std::string debugString = "";
+				for (size_t t = 0; t < readLength; ++t) {
+					debugString += genome[genomeBeginPos + t];
+				}
+			
+			
 				ErrorType type;
 				if (baseInGenome == "A") {
 					type = ErrorType::SUB_FROM_A;

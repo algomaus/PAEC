@@ -12,9 +12,9 @@
 
 #include "../CoverageBias/PUSM.h"
 
-KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, CoverageBiasUnit &biasUnitRef,
+KmerClassificationUnit::KmerClassificationUnit(KmerCounter &kmerCounter, KmerCounter &refCounter, CoverageBiasUnit &biasUnitRef,
 		PerfectUniformSequencingModel &pusmRef, KmerClassificationType type) :
-		counter(kmerCounter), biasUnit(biasUnitRef), pusm(pusmRef) {
+		counter(kmerCounter), genomeCounter(refCounter), biasUnit(biasUnitRef), pusm(pusmRef) {
 	classificationType = type;
 	mlClassifier = NULL;
 	if (type == KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING) {
@@ -335,6 +335,19 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 		KmerType kmerType = kmerTypeFromNumber(typeAsInt);
 		cachedClassifications[kmer] = kmerType;
 
+		return kmerType;
+	} else if (classificationType == KmerClassificationType::CLASSIFICATION_CHEATING) {
+		KmerType kmerType;
+		size_t countGenome = genomeCounter.countKmer(kmer);
+		if (countGenome == 0) {
+			kmerType = KmerType::UNTRUSTED;
+		} else if (countGenome == 1) {
+			kmerType = KmerType::TRUSTED;
+		} else {
+			kmerType = KmerType::REPEAT;
+		}
+		cachedClassifications[kmer] = kmerType;
+		
 		return kmerType;
 	} else {
 		throw std::runtime_error("Unknown classification type");

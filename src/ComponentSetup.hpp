@@ -37,7 +37,7 @@ public:
 			ErrorProfileType errorProfileType, ErrorCorrectionType corrType, bool indels) :
 			dataset(ds), counterReads(ds.readsOnlyFileName), counterReference(ds.referenceFileName), pusm(
 					ds.readLengthsPtr, ds.genomeSize, ds.genomeType), covBias(coverageBiasType, ds.genomeSize, pusm), kmerClassifier(
-					counterReads, covBias, pusm, classificationType), epuMotif(counterReads), epuMotif2(counterReads), epuClassify(
+					counterReads, counterReference, covBias, pusm, classificationType), epuMotif(counterReads), epuMotif2(counterReads), epuClassify(
 					ds.plotPath, coverageBiasType, kmerClassifier, epuMotif, ds.hasQualityScores), epuClassify2(
 					ds.plotPath, coverageBiasType, kmerClassifier, epuMotif2, ds.hasQualityScores) {
 		covBiasType = coverageBiasType;
@@ -50,18 +50,19 @@ public:
 
 		if (profileType == ErrorProfileType::MACHINE_LEARNING) {
 			ecu = ErrorCorrectionUnit(correctionType, epuClassify, kmerClassifier, correctIndels, ece);
-			edu.addObserver(epuMotif);
-			edu.addObserver(epuClassify);
-			ecu.addObserver(epuMotif2);
-			ecu.addObserver(epuClassify2);
+			//edu.addObserver(epuMotif);
+			//edu.addObserver(epuClassify);
+			//ecu.addObserver(epuMotif2);
+			//ecu.addObserver(epuClassify2);
+			ecu.addObserver(epuOverall2);
 		} else if (profileType == ErrorProfileType::MOTIF_STATS_ONLY) {
 			ecu = ErrorCorrectionUnit(correctionType, epuMotif, kmerClassifier, correctIndels, ece);
-			edu.addObserver(epuMotif);
-			ecu.addObserver(epuMotif2);
+			//edu.addObserver(epuMotif);
+			//ecu.addObserver(epuMotif2);
 		} else {
 			ecu = ErrorCorrectionUnit(correctionType, epuOverall, kmerClassifier, correctIndels,ece);
-			edu.addObserver(epuOverall);
-			ecu.addObserver(epuOverall2);
+			//edu.addObserver(epuOverall);
+			//ecu.addObserver(epuOverall2);
 		}
 	}
 
@@ -100,7 +101,7 @@ public:
 
 	void experimentAllErrorProfiles() {
 		CoverageBiasUnit biasUnitLoaded(CoverageBiasType::MEDIAN_BIAS_READS_ONLY, dataset.genomeSize, pusm);
-		KmerClassificationUnit classifier(counterReads, biasUnitLoaded, pusm,
+		KmerClassificationUnit classifier(counterReads, counterReference, biasUnitLoaded, pusm,
 				KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING);
 		classifier.loadClassifier(dataset.plotPath + "bestKmerClassifier.joblib.pkl");
 
@@ -153,7 +154,7 @@ public:
 	void experimentAllKmerClassifiers() {
 		CoverageBiasUnit biasUnitLoaded(CoverageBiasType::MEDIAN_BIAS_READS_ONLY, dataset.genomeSize, pusm);
 		biasUnitLoaded.loadBias(dataset.plotPath + "coverageBias.median_bias_reads.txt");
-		KmerClassificationUnit classifier(counterReads, biasUnitLoaded, pusm,
+		KmerClassificationUnit classifier(counterReads, counterReference, biasUnitLoaded, pusm,
 				KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING);
 		classifier.trainClassifier(dataset, counterReference);
 		classifier.storeClassifier(dataset.plotPath + "bestKmerClassifier.joblib.pkl");

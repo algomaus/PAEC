@@ -22,12 +22,12 @@
 #include "../CoverageBias/PUSM.h"
 
 enum KmerClassificationType {
-	CLASSIFICATION_STATISTICAL = 0, CLASSIFICATION_NAIVE = 1, CLASSIFICATION_MACHINE_LEARNING = 2
+	CLASSIFICATION_STATISTICAL = 0, CLASSIFICATION_NAIVE = 1, CLASSIFICATION_MACHINE_LEARNING = 2, CLASSIFICATION_CHEATING = 3
 };
 
 class KmerClassificationUnit {
 public:
-	KmerClassificationUnit(KmerCounter &kmerCounter, CoverageBiasUnit &biasUnitRef,
+	KmerClassificationUnit(KmerCounter &kmerCounter, KmerCounter &refCounter, CoverageBiasUnit &biasUnitRef,
 			PerfectUniformSequencingModel &pusmRef, KmerClassificationType type);
 	~KmerClassificationUnit();
 	void trainClassifier(Dataset &ds, KmerCounter &genomeCounter);
@@ -45,6 +45,7 @@ private:
 	void writeTrainingString(double zScore, double gc, size_t k, double countObserved, double countBiasCorrected,
 			double countExpectedPusm, KmerType type, std::ofstream &outfile);
 	KmerCounter &counter;
+	KmerCounter &genomeCounter;
 	CoverageBiasUnit &biasUnit;
 	PerfectUniformSequencingModel &pusm;
 	KmerClassificationType classificationType;
