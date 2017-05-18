@@ -33,7 +33,7 @@ void initPython() {
 	PyObject *sys = PyImport_ImportModule("sys");
 	PyObject *path = PyObject_GetAttrString(sys, "path");
 	PyList_Append(path,
-			PyString_FromString("/home/sarah/Documents/Masterarbeit/devel/MasterThesisCodeV2/PAEC/src/python"));
+			PyString_FromString("/home/sarah/Documents/Master Thesis Topic Extension/PAEC/src/python"));
 	Py_DECREF(sys);
 	Py_DECREF(path);
 }

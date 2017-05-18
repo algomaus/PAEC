@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include <cereal/types/vector.hpp>
+#include "external/cereal/types/vector.hpp"
 
 #include "Correction.h"
 #include "ErrorType.h"

@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <iostream>
 #include <string>
-#include <cereal/types/string.hpp>
+#include "external/cereal/types/string.hpp"
 
 #include "ErrorType.h"
 
