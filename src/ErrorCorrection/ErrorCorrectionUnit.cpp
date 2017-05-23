@@ -10,7 +10,7 @@
 #include <functional>
 #include <iostream>
 
-#include <cereal/archives/binary.hpp>
+#include "../external/cereal/archives/binary.hpp"
 
 #include "../ProducerConsumerPattern.hpp"
 #include "../CorrectedRead.h"
@@ -23,6 +23,8 @@ ErrorCorrectionUnit::ErrorCorrectionUnit(ErrorCorrectionType type, ErrorProfileU
 		bool correctIndels, ErrorCorrectionEvaluation &ece) {
 	if (type == ErrorCorrectionType::KMER_BASED) {
 		correctRead = std::bind(correctRead_KmerBased, _1, std::ref(epu), std::ref(kcu), correctIndels);
+	} else if (type == ErrorCorrectionType::KMER_IMPROVED) {
+		correctRead = std::bind(correctRead_KmerImproved, _1, std::ref(epu), std::ref(kcu), correctIndels);
 	} else if (type == ErrorCorrectionType::NAIVE) {
 		correctRead = std::bind(correctRead_Naive, _1, std::ref(epu), std::ref(kcu), correctIndels);
 	} else {

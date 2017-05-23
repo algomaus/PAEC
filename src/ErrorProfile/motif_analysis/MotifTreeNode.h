@@ -9,7 +9,7 @@
 
 #include <stddef.h>
 #include <vector>
-#include <cereal/types/vector.hpp>
+#include "../../external/cereal/types/vector.hpp"
 
 #include "MotifTreeEntry.h"
 

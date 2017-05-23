@@ -132,25 +132,25 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 
 	// ignore searching errors in soft-clipped non-chimeric reads
 	/*if (records.size() == 1) {
-		for (size_t i = 0; i < length(records[0].cigar); ++i) {
-			if (records[0].cigar[i].operation == 'S') {
-				return;
-			}
-		}
-	}
+	 for (size_t i = 0; i < length(records[0].cigar); ++i) {
+	 if (records[0].cigar[i].operation == 'S') {
+	 return;
+	 }
+	 }
+	 }
 
-	// ignore searching errors in reads with chimeric breaks
-	if (records.size() > 1) {
-		throw std::runtime_error("records.size() > 1");
-		return;
-	}*/
+	 // ignore searching errors in reads with chimeric breaks
+	 if (records.size() > 1) {
+	 throw std::runtime_error("records.size() > 1");
+	 return;
+	 }*/
 
 	std::vector<CorrectionAligned> corrections;
 
 	for (seqan::BamAlignmentRecord record : records) {
-	
+
 		std::string cigarString = "";
-	
+
 		// Extract CIGAR string and total read length (including unmapped regions)
 		seqan::String< seqan::CigarElement<char> > cigar = record.cigar;
 		unsigned readLength = 0;
@@ -196,7 +196,8 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 
 				correctedRead.applyCorrection(
 						CorrectionAligned(nucleotidePositionInReference,
-								Correction(realPositionInRead, correctedRead.originalPositions[realPositionInRead], "", "", ErrorType::MULTIDEL))); // because we treat chimeric breaks as deletion of multiple bases
+								Correction(realPositionInRead, correctedRead.originalPositions[realPositionInRead], "",
+										"", ErrorType::MULTIDEL))); // because we treat chimeric breaks as deletion of multiple bases
 			} else if (cigar[i].operation == 'S') { // soft clipping
 				for (size_t j = 0; j < cigar[i].count; ++j) {
 					correctedRead.correctedRead.sequence[positionInRead + hardClippedBases + j] = 'S';
@@ -215,7 +216,7 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 				for (size_t j = 0; j < cigar[i].count; ++j) {
 					unsigned nucleotidePositionRead = positionInRead;
 					char nucleotideInRead = correctedRead.correctedRead.sequence[nucleotidePositionRead];
-					
+
 					if (nucleotideInRead == 'S') {
 						throw std::runtime_error("this should not happen");
 					}
@@ -233,7 +234,7 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 
 					std::string fromBase = "";
 					fromBase += nucleotideInRead;
-					
+
 					size_t correctionPosition = realPositionInRead;
 					if (hasFlagRC(record)) {
 						correctionPosition = correctedRead.correctedRead.sequence.size() - correctionPosition - 1;
@@ -241,69 +242,71 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 
 					correctedRead.applyCorrection(
 							CorrectionAligned(nucleotidePositionInReference,
-									Correction(correctionPosition, correctedRead.originalPositions[correctionPosition], fromBase, "", ErrorType::INSERTION)));
+									Correction(correctionPosition, correctedRead.originalPositions[correctionPosition],
+											fromBase, "", ErrorType::INSERTION)));
 
 				}
 				insertedBases += cigar[i].count;
 
 			} else if (cigar[i].operation == 'D') { // deletion
 				size_t realPositionInRead = positionInRead + hardClippedBases - 1;
-	
-				/*if (hasFlagRC(record)) {
-					std::cout << "REVERSE COMPLEMENTED READ\n";
-					
-					std::string genomeSubstr = "";
-					for (size_t i = record.beginPos; i < record.beginPos + readLength; ++i) {
-						genomeSubstr += genome[i];
-					}
-					
-					std::cout << "genome substring:\n";
-					std::cout << genomeSubstr << "\n";
-					
-					std::cout << "reverse complemented read before fixing deletion:\n";
-					std::cout << reverseComplementString(correctedRead.correctedRead.sequence) << "\n";
-				}
 
-				std::cout << "before fixing deletion:\n";
-				std::cout << correctedRead.correctedRead.sequence << "\n";*/
+				/*if (hasFlagRC(record)) {
+				 std::cout << "REVERSE COMPLEMENTED READ\n";
+
+				 std::string genomeSubstr = "";
+				 for (size_t i = record.beginPos; i < record.beginPos + readLength; ++i) {
+				 genomeSubstr += genome[i];
+				 }
+
+				 std::cout << "genome substring:\n";
+				 std::cout << genomeSubstr << "\n";
+
+				 std::cout << "reverse complemented read before fixing deletion:\n";
+				 std::cout << reverseComplementString(correctedRead.correctedRead.sequence) << "\n";
+				 }
+
+				 std::cout << "before fixing deletion:\n";
+				 std::cout << correctedRead.correctedRead.sequence << "\n";*/
 
 				assert(realPositionInRead < readLength);
 
 				std::string fromBase = "";
 				fromBase += correctedRead.correctedRead.sequence[realPositionInRead];
-				
+
 				if (fromBase == "S") {
 					std::cout << cigarString << "\n";
 					std::cout << "realpositionInRead:" << realPositionInRead << "\n";
 					std::cout << correctedRead.correctedRead.sequence << "\n";
 					throw std::runtime_error("this should not happen");
 				}
-				
+
 				std::string toBases = "";
-				
+
 				size_t correctionPosition = realPositionInRead;
 				if (hasFlagRC(record)) {
 					correctionPosition = correctedRead.correctedRead.sequence.size() - correctionPosition - 1;
 				}
 
-				unsigned nucleotidePositionInReference = (positionInRead + hardClippedBases) + record.beginPos - softClippedBases;
+				unsigned nucleotidePositionInReference = (positionInRead + hardClippedBases) + record.beginPos
+						- softClippedBases;
 				/*if (hasFlagRC(record)) {
-					nucleotidePositionInReference = record.beginPos - (positionInRead + hardClippedBases);
-				}*/
-				
+				 nucleotidePositionInReference = record.beginPos - (positionInRead + hardClippedBases);
+				 }*/
+
 				if (nucleotidePositionInReference >= length(genome)) {
 					std::string cigarString = "";
 					for (unsigned i = 0; i < length(cigar); ++i) {
-							cigarString += cigar[i].operation;
-							cigarString += ":";
-							cigarString += std::to_string(cigar[i].count);
-							cigarString += " ";
+						cigarString += cigar[i].operation;
+						cigarString += ":";
+						cigarString += std::to_string(cigar[i].count);
+						cigarString += " ";
 					}
 					std::cout << "cigar String:" << cigarString << "\n";
 					std::cout << "beginPos: " << record.beginPos << "\n";
 					std::cout << "read length: " << length(record.seq) << "\n";
 					std::cout << "genome size: " << length(genome) << "\n";
-				
+
 					throw std::runtime_error("nucleotidePositionInReference >= length(genome)");
 				}
 
@@ -321,36 +324,44 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 					if (nucleotideInReference == 'A') {
 						correctedRead.applyCorrection(
 								CorrectionAligned(nucleotidePositionInReference,
-										Correction(correctionPosition, correctedRead.originalPositions[correctionPosition],fromBase, fromBase + "A", ErrorType::DEL_OF_A)));
+										Correction(correctionPosition,
+												correctedRead.originalPositions[correctionPosition], fromBase,
+												fromBase + "A", ErrorType::DEL_OF_A)));
 					} else if (nucleotideInReference == 'C') {
 						correctedRead.applyCorrection(
 								CorrectionAligned(nucleotidePositionInReference,
-										Correction(correctionPosition,correctedRead.originalPositions[correctionPosition], fromBase, fromBase + "C", ErrorType::DEL_OF_C)));
+										Correction(correctionPosition,
+												correctedRead.originalPositions[correctionPosition], fromBase,
+												fromBase + "C", ErrorType::DEL_OF_C)));
 					} else if (nucleotideInReference == 'G') {
 						correctedRead.applyCorrection(
 								CorrectionAligned(nucleotidePositionInReference,
-										Correction(correctionPosition,correctedRead.originalPositions[correctionPosition], fromBase, fromBase + "G", ErrorType::DEL_OF_G)));
+										Correction(correctionPosition,
+												correctedRead.originalPositions[correctionPosition], fromBase,
+												fromBase + "G", ErrorType::DEL_OF_G)));
 					} else if (nucleotideInReference == 'T') {
 						correctedRead.applyCorrection(
 								CorrectionAligned(nucleotidePositionInReference,
-										Correction(correctionPosition,correctedRead.originalPositions[correctionPosition], fromBase, fromBase + "T", ErrorType::DEL_OF_T)));
+										Correction(correctionPosition,
+												correctedRead.originalPositions[correctionPosition], fromBase,
+												fromBase + "T", ErrorType::DEL_OF_T)));
 					} else if (nucleotideInReference != 'N') {
 						throw std::runtime_error("weird base in reference genome");
 					}
 				} else {
 					correctedRead.applyCorrection(
 							CorrectionAligned(nucleotidePositionInReference,
-									Correction(correctionPosition, correctedRead.originalPositions[correctionPosition],fromBase, fromBase + toBases, ErrorType::MULTIDEL)));
+									Correction(correctionPosition, correctedRead.originalPositions[correctionPosition],
+											fromBase, fromBase + toBases, ErrorType::MULTIDEL)));
 				}
 				positionInRead += cigar[i].count;
-				
-				/*std::cout << "after fixing deletion:\n";
-				std::cout << correctedRead.correctedRead.sequence << "\n";
-				
-				
-				std::cout << "reverse complemented read after fixing deletion:\n";
-				std::cout << reverseComplementString(correctedRead.correctedRead.sequence) << "\n";*/
 
+				/*std::cout << "after fixing deletion:\n";
+				 std::cout << correctedRead.correctedRead.sequence << "\n";
+
+
+				 std::cout << "reverse complemented read after fixing deletion:\n";
+				 std::cout << reverseComplementString(correctedRead.correctedRead.sequence) << "\n";*/
 
 			} else if (cigar[i].operation == 'P' || cigar[i].operation == 'N') {
 				std::cout << "ERROR! There are letters I don't understand yet!" << cigar[i].operation << std::endl;
@@ -360,7 +371,7 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 		// now that indels have been fixed, fix the substitution errors.
 
 		/*std::cout << "before fixing substitution errors:\n";
-		std::cout << correctedRead.correctedRead.sequence << "\n";*/
+		 std::cout << correctedRead.correctedRead.sequence << "\n";*/
 
 		int genomeIdx = genomeBeginPos - 1;
 		for (size_t i = 0; i < correctedRead.correctedRead.sequence.size(); ++i) {
@@ -369,43 +380,61 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 			} else {
 				genomeIdx++;
 			}
-			
+
 			std::string baseInRead = "";
 			baseInRead += correctedRead.correctedRead.sequence[i];
 			std::string baseInGenome = "";
 			baseInGenome += genome[genomeIdx];
-			
+
 			size_t correctionPos = i;
-			
+
 			if (hasFlagRC(record)) {
 				//std::cout << "REVERSE COMPLEMENTED READ\n";
-			
+
 				correctionPos = correctedRead.correctedRead.sequence.size() - i - 1;
-			
+
 				//std::string revComp = reverseComplementString(correctedRead.correctedRead.sequence);
 				baseInRead = "";
 				baseInRead += reverseComplementBase(correctedRead.correctedRead.sequence[correctionPos]);
-				
+
 				//baseInRead += revComp[i];
-				
 			}
-			
+
 			if (baseInRead != baseInGenome) {
 				std::string debugString = "";
 				for (size_t t = 0; t < readLength; ++t) {
 					debugString += genome[genomeBeginPos + t];
 				}
-			
-			
+
 				ErrorType type;
 				if (baseInGenome == "A") {
 					type = ErrorType::SUB_FROM_A;
+
+					if (hasFlagRC(record)) {
+						type = ErrorType::SUB_FROM_T; // TODO: Check me.
+					}
+
 				} else if (baseInGenome == "C") {
 					type = ErrorType::SUB_FROM_C;
+
+					if (hasFlagRC(record)) {
+						type = ErrorType::SUB_FROM_G; // TODO: Check me.
+					}
+
 				} else if (baseInGenome == "G") {
 					type = ErrorType::SUB_FROM_G;
+
+					if (hasFlagRC(record)) {
+						type = ErrorType::SUB_FROM_C; // TODO: Check me.
+					}
+
 				} else if (baseInGenome == "T") {
 					type = ErrorType::SUB_FROM_T;
+
+					if (hasFlagRC(record)) {
+						type = ErrorType::SUB_FROM_A; // TODO: Check me.
+					}
+
 				} else if (baseInGenome == "N") {
 					throw std::runtime_error("base in genome is N");
 					continue;
@@ -414,20 +443,21 @@ void ReadWithAlignments::extractErrors(const seqan::Dna5String &genome) {
 				}
 				correctedRead.applyCorrection(
 						CorrectionAligned(genomeIdx,
-								Correction(correctionPos, correctedRead.originalPositions[correctionPos],baseInRead, baseInGenome, type)));
+								Correction(correctionPos, correctedRead.originalPositions[correctionPos], baseInRead,
+										baseInGenome, type)));
 			}
 		}
-		
+
 		/*std::cout << "after fixing substitution errors:\n";
-		std::cout << correctedRead.correctedRead.sequence << "\n";
-		
-		std::cout << "beginPos: " << correctedRead.beginPos << "\n";
-		
-		std::cout << cigarString << "\n";
-		
-		MDTag mdTag;
-		extractMDTag(record, mdTag);
-		std::cout << mdTagToString(mdTag) << "\n";*/
+		 std::cout << correctedRead.correctedRead.sequence << "\n";
+
+		 std::cout << "beginPos: " << correctedRead.beginPos << "\n";
+
+		 std::cout << cigarString << "\n";
+
+		 MDTag mdTag;
+		 extractMDTag(record, mdTag);
+		 std::cout << mdTagToString(mdTag) << "\n";*/
 
 		correctedRead.endPos = genomeIdx - 1;
 	}

@@ -12,8 +12,8 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/utility.hpp>
+#include "../external/cereal/types/unordered_map.hpp"
+#include "../external/cereal/types/utility.hpp"
 
 #include "../CorrectedRead.h"
 #include "../ErrorType.h"

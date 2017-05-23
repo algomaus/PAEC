@@ -7,7 +7,7 @@
 
 #include "ErrorDetectionUnit.h"
 
-#include <cereal/archives/binary.hpp>
+#include "../external/cereal/archives/binary.hpp"
 
 #include <seqan/basic.h>
 #include <seqan/sequence.h>

@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <cereal/archives/binary.hpp>
+#include "../external/cereal/archives/binary.hpp"
 
 #include "../AlignedInformation/CorrectedReadAligned.h"
 #include "../CorrectedRead.h"

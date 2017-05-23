@@ -9,7 +9,7 @@
 
 #include <memory>
 
-#include <cereal/types/vector.hpp>
+#include "../external/cereal/types/vector.hpp"
 
 #include "../CorrectedRead.h"
 #include "CorrectionAligned.h"

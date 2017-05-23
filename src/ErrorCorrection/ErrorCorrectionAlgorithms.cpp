@@ -425,6 +425,9 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 
 	for (size_t m = 0; m < probRankings.size(); ++m) {
 		size_t i = probRankings[m].first;
+
+		assert(kmer[i] == corr.correctedRead.sequence[i + kmerStartPos]);
+
 		ErrorType bestError = probRankings[m].second.first;
 		double errorProb = probRankings[m].second.second;
 		if (bestError == ErrorType::MULTIDEL)
@@ -513,11 +516,13 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 			KmerType type = kmerClassifier.classifyKmer(correctedKmer);
 
 			// extend the k-mer if it is repetitive now
-			size_t inc = 0;
+			size_t inc = 2;
 			while (type == KmerType::REPEAT
-					&& kmerStartPos + correctedKmer.size() + inc + 1 < corr.correctedRead.sequence.size()) {
-				correctedKmer += corr.correctedRead.sequence[kmerStartPos + correctedKmer.size() + inc];
-				correctedKmer += corr.correctedRead.sequence[kmerStartPos + correctedKmer.size() + inc];
+					&& kmerStartPos + kmerClassifier.getMinKmerSize() + inc < corr.correctedRead.sequence.size()) {
+				correctedKmer = corr.correctedRead.sequence.substr(kmerStartPos, kmerClassifier.getMinKmerSize() + inc);
+				if (correctedKmer.find("_") != std::string::npos) {
+					break;
+				}
 				type = kmerClassifier.classifyKmer(correctedKmer);
 				inc += 2;
 			}
@@ -526,7 +531,8 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 			if (type == KmerType::TRUSTED) {
 				//std::cout << "did a correction\n";
 
-				// found the correction. Apply the correction to the corrected read,
+				// found the correction. Apply the correction to the corrected read.
+
 				corr.applyCorrection(bestError, i + kmerStartPos, errorProb);
 				foundNewError = true;
 				return foundNewError;
@@ -535,6 +541,111 @@ bool correctKmer(const std::string &kmer, size_t kmerStartPos, CorrectedRead &co
 		}
 	}
 	return foundNewError;
+}
+
+// TODO: Change corrRead into a const?
+bool growKmer(std::string &kmer, size_t pos, size_t &incLeft, size_t &incRight, CorrectedRead &corr,
+		KmerClassificationUnit &kmerClassifier) {
+	size_t kMin = kmer.size();
+	size_t n = corr.correctedRead.sequence.size();
+	size_t kmerStartPos = pos;
+	KmerType type = KmerType::REPEAT;
+	bool res = false;
+
+	while (type == KmerType::REPEAT && kmerStartPos + kMin + incRight + 2 <= n) {
+		incRight += 2;
+		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight);
+		type = kmerClassifier.classifyKmer(kmer);
+		res = true;
+	}
+
+	while (type == KmerType::REPEAT && kmerStartPos >= incLeft + 2) {
+		incLeft += 2;
+		kmerStartPos -= incLeft;
+		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight + incLeft);
+		type = kmerClassifier.classifyKmer(kmer);
+		res = true;
+	}
+	return res;
+}
+
+CorrectedRead correctRead_KmerImproved(const FASTQRead &fastqRead, ErrorProfileUnit &errorProfile,
+		KmerClassificationUnit &kmerClassifier, bool correctIndels) {
+	CorrectedRead corr(fastqRead);
+	size_t kMin = kmerClassifier.getMinKmerSize();
+	size_t pos = 0;
+	while (pos < corr.correctedRead.sequence.size()) {
+		size_t kmerStartPos = pos;
+		std::string kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin);
+		size_t incLeft = 0;
+		size_t incRight = 0;
+		KmerType type = kmerClassifier.classifyKmer(kmer);
+		if (type == KmerType::REPEAT) {
+			growKmer(kmer, pos, incLeft, incRight, corr, kmerClassifier);
+			type = kmerClassifier.classifyKmer(kmer);
+			if (type == KmerType::REPEAT)
+				break; // no extension possible, the whole read belongs to a repetitive region
+		}
+
+		bool hasFinished = false;
+		while (hasFinished == false) {
+			hasFinished = true;
+			if (type == KmerType::UNTRUSTED) { // try to correct the k-mer at position incLeft in the kmer (TODO: Is this the best position to try? Or should one try all positions here?)
+				std::vector<ErrorType> candidates;
+				for (ErrorType errorType : errorTypeIterator()) {
+					if (errorType == ErrorType::CORRECT || errorType == ErrorType::NODEL
+							|| errorType == ErrorType::MULTIDEL) {
+						continue;
+					}
+					if (errorType == ErrorType::SUB_FROM_A && corr.correctedRead.sequence[pos] == 'A') {
+						continue;
+					}
+					if (errorType == ErrorType::SUB_FROM_C && corr.correctedRead.sequence[pos] == 'C') {
+						continue;
+					}
+					if (errorType == ErrorType::SUB_FROM_G && corr.correctedRead.sequence[pos] == 'G') {
+						continue;
+					}
+					if (errorType == ErrorType::SUB_FROM_T && corr.correctedRead.sequence[pos] == 'T') {
+						continue;
+					}
+
+					std::string candidateKmer = kmerAfterError(kmer, errorType, incLeft);
+					KmerType candidateKmerType = kmerClassifier.classifyKmer(candidateKmer);
+					size_t incCandidate = 0;
+					// increase candidate k-mer to the right if it is repetitive
+					while (candidateKmerType == KmerType::REPEAT
+							&& kmerStartPos + incRight + incLeft + incCandidate + 2
+									<= corr.correctedRead.sequence.size()) {
+						incCandidate += 2;
+						candidateKmer = corr.correctedRead.sequence.substr(kmerStartPos,
+								kMin + incRight + incLeft + incCandidate);
+						candidateKmer = kmerAfterError(candidateKmer, errorType, incLeft);
+						candidateKmerType = kmerClassifier.classifyKmer(candidateKmer);
+					}
+					// TODO: also increase it to the left if it is still repetitive...
+					// ...
+					if (candidateKmerType != KmerType::UNTRUSTED) {
+						candidates.push_back(errorType);
+					}
+				}
+
+				if (candidates.size() == 0) {
+					//std::cout << "Could not find a correction candidate for this error.\n";
+				} else if (candidates.size() == 1) {
+					//std::cout << "Clear correction candidate.\n";
+					corr.applyCorrection(candidates[0], pos, 1.0);
+				} else {
+					//std::cout << "Found multiple correction candidates. k-mer size must be increased.\n";
+					//increase k-mer size and try again
+					hasFinished = !growKmer(kmer, pos, incLeft, incRight, corr, kmerClassifier);
+				}
+			}
+		}
+
+		pos++;
+	}
+	return corr;
 }
 
 // TODO FIXME: Improve k-mer covering of the read...
@@ -550,16 +661,18 @@ bool precorrectRead_KmerBased(CorrectedRead &corr, ErrorProfileUnit &errorProfil
 			continue;
 		}
 		KmerType kmerType = kmerClassifier.classifyKmer(kmerString);
-		size_t j = 0;
-		while (kmerType == KmerType::REPEAT && i + kmerString.size() + j + 1 < corr.correctedRead.sequence.size()) {
-			if (corr.correctedRead.sequence[i + kmerString.size() + j] == '_'
-					|| corr.correctedRead.sequence[i + kmerString.size() + j + 1] == '_') {
+
+		size_t inc = 2;
+		while (kmerType == KmerType::REPEAT
+				&& i + kmerClassifier.getMinKmerSize() + inc < corr.correctedRead.sequence.size()) {
+			kmerString = corr.correctedRead.sequence.substr(i, kmerClassifier.getMinKmerSize() + inc);
+			if (kmerString.find("_") != std::string::npos) {
 				break;
 			}
-			kmerString += corr.correctedRead.sequence[i + kmerString.size() + j];
-			kmerString += corr.correctedRead.sequence[i + kmerString.size() + j];
 			kmerType = kmerClassifier.classifyKmer(kmerString);
+			inc += 2;
 		}
+
 		if (kmerType == KmerType::UNTRUSTED) {
 			foundNewError |= correctKmer(kmerString, i, corr, errorProfile, kmerClassifier, withMultidel,
 					correctIndels);

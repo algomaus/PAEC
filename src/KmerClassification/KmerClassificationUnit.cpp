@@ -275,13 +275,13 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 		throw std::runtime_error("K-mer classification called with an invalid k-mer!");
 	}
 
-	if (cachedClassifications.find(kmer) != cachedClassifications.end()) {
+	/*if (cachedClassifications.find(kmer) != cachedClassifications.end()) {
 		return cachedClassifications[kmer];
-	}
+	}*/
 
 	if (classificationType == KmerClassificationType::CLASSIFICATION_STATISTICAL) {
 		KmerType type = classifyZScore(kmerZScore(kmer));
-		cachedClassifications[kmer] = type;
+		//cachedClassifications[kmer] = type;
 		return type;
 	} else if (classificationType == KmerClassificationType::CLASSIFICATION_NAIVE) {
 		double bias = biasUnit.getBias(kmer);
@@ -297,7 +297,7 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 		} else {
 			type = KmerType::REPEAT;
 		}
-		cachedClassifications[kmer] = type;
+		//cachedClassifications[kmer] = type;
 		return type;
 	} else if (classificationType == KmerClassificationType::CLASSIFICATION_MACHINE_LEARNING) {
 		// build feature vector
@@ -333,7 +333,7 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 		//PyGILState_Release(gstate);
 
 		KmerType kmerType = kmerTypeFromNumber(typeAsInt);
-		cachedClassifications[kmer] = kmerType;
+		//cachedClassifications[kmer] = kmerType;
 
 		return kmerType;
 	} else if (classificationType == KmerClassificationType::CLASSIFICATION_CHEATING) {
@@ -346,7 +346,7 @@ KmerType KmerClassificationUnit::classifyKmer(const std::string &kmer) {
 		} else {
 			kmerType = KmerType::REPEAT;
 		}
-		cachedClassifications[kmer] = kmerType;
+		//cachedClassifications[kmer] = kmerType;
 		
 		return kmerType;
 	} else {

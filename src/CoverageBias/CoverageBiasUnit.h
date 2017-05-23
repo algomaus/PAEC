@@ -12,7 +12,7 @@
 #include <cmath>
 #include <memory>
 #include <seqan/sequence.h>
-#include <cereal/types/vector.hpp>
+#include "../external/cereal/types/vector.hpp"
 
 #include "../KmerClassification/KmerCounter.h"
 #include "PUSM.h"

@@ -9,7 +9,7 @@
 
 #include <stddef.h>
 #include <unordered_map>
-#include <cereal/types/unordered_map.hpp>
+#include "../../external/cereal/types/unordered_map.hpp"
 
 #include "../../ErrorType.h"
 

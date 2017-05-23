@@ -46,7 +46,9 @@ void processDataset(Dataset &ds) {
 	bool extendedCover = false; // do Step 2 of the error correction method or not
 	ComponentSetup cs(ds, CoverageBiasType::MEDIAN_BIAS_READS_ONLY,
 			KmerClassificationType::CLASSIFICATION_CHEATING, ErrorProfileType::MACHINE_LEARNING,
-			ErrorCorrectionType::KMER_BASED, extendedCover);
+			ErrorCorrectionType::KMER_IMPROVED, extendedCover);
+
+	//std::cout << "Using old approach from master thesis.\n";
 
 	// extract errors from alignment
 	cs.extractErrors();

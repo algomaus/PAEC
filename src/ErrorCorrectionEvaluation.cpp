@@ -129,6 +129,14 @@ void ErrorCorrectionEvaluation::fillConfusionMatrix(const CorrectedReadAligned &
 	std::vector<bool> unalteredBasesTruth(truth.originalRead.sequence.size(), true);
 	std::vector<bool> unalteredBasesRead(cr.originalRead.sequence.size(), true);
 
+	if (truth.corrections.size() > 0) {
+		std::cout << "foo\n";
+	}
+
+	if (truth.originalRead.sequence != truth.correctedRead.sequence) {
+		//std::cout << "breakpoint?\n";
+	}
+
 	for (CorrectionAligned corrAl: truth.alignedCorrections) {
 		unalteredBasesTruth[corrAl.correction.originalReadPos] = false;
 		bool found = false;

@@ -26,7 +26,7 @@
 using namespace std::placeholders;
 
 enum ErrorCorrectionType {
-	NAIVE = 0, KMER_BASED = 1
+	NAIVE = 0, KMER_BASED = 1, KMER_IMPROVED = 2
 };
 
 /*
