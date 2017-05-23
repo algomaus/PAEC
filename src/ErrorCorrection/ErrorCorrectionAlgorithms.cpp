@@ -552,6 +552,8 @@ bool growKmer(std::string &kmer, size_t pos, size_t &incLeft, size_t &incRight, 
 	KmerType type = KmerType::REPEAT;
 	bool res = false;
 
+	//std::cout << "k-mer before: " << kmer << std::endl;
+
 	while (type == KmerType::REPEAT && kmerStartPos + kMin + incRight + 2 <= n) {
 		incRight += 2;
 		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight);
@@ -559,12 +561,44 @@ bool growKmer(std::string &kmer, size_t pos, size_t &incLeft, size_t &incRight, 
 		res = true;
 	}
 
-	while (type == KmerType::REPEAT && kmerStartPos >= incLeft + 2) {
+	//std::cout << "k-mer after 1: " << kmer << std::endl;
+
+	while (type == KmerType::REPEAT && pos >= incLeft + 2) {
 		incLeft += 2;
-		kmerStartPos -= incLeft;
+		kmerStartPos = pos - incLeft;
 		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight + incLeft);
 		type = kmerClassifier.classifyKmer(kmer);
 		res = true;
+	}
+
+	//std::cout << "k-mer after 2: " << kmer << std::endl;
+
+	return res;
+}
+
+std::vector<ErrorType> reasonableErrorTypes(std::string &kmer, size_t posInKmer) {
+	std::vector<ErrorType> res;
+	if (kmer[posInKmer] != 'A') {
+		res.push_back(ErrorType::SUB_FROM_A);
+	}
+	if (kmer[posInKmer] != 'C') {
+		res.push_back(ErrorType::SUB_FROM_C);
+	}
+	if (kmer[posInKmer] != 'G') {
+		res.push_back(ErrorType::SUB_FROM_G);
+	}
+	if (kmer[posInKmer] != 'T') {
+		res.push_back(ErrorType::SUB_FROM_T);
+	}
+	if (kmer.size() > 1) {
+		res.push_back(ErrorType::INSERTION);
+	}
+	if (posInKmer < kmer.size() - 1) {
+		res.push_back(ErrorType::DEL_OF_A);
+		res.push_back(ErrorType::DEL_OF_C);
+		res.push_back(ErrorType::DEL_OF_G);
+		res.push_back(ErrorType::DEL_OF_T);
+		//res.push_back(ErrorType::MULTIDEL);
 	}
 	return res;
 }
@@ -591,25 +625,9 @@ CorrectedRead correctRead_KmerImproved(const FASTQRead &fastqRead, ErrorProfileU
 		while (hasFinished == false) {
 			hasFinished = true;
 			if (type == KmerType::UNTRUSTED) { // try to correct the k-mer at position incLeft in the kmer (TODO: Is this the best position to try? Or should one try all positions here?)
+				std::vector<ErrorType> reasonableTypes = reasonableErrorTypes(kmer, incLeft);
 				std::vector<ErrorType> candidates;
-				for (ErrorType errorType : errorTypeIterator()) {
-					if (errorType == ErrorType::CORRECT || errorType == ErrorType::NODEL
-							|| errorType == ErrorType::MULTIDEL) {
-						continue;
-					}
-					if (errorType == ErrorType::SUB_FROM_A && corr.correctedRead.sequence[pos] == 'A') {
-						continue;
-					}
-					if (errorType == ErrorType::SUB_FROM_C && corr.correctedRead.sequence[pos] == 'C') {
-						continue;
-					}
-					if (errorType == ErrorType::SUB_FROM_G && corr.correctedRead.sequence[pos] == 'G') {
-						continue;
-					}
-					if (errorType == ErrorType::SUB_FROM_T && corr.correctedRead.sequence[pos] == 'T') {
-						continue;
-					}
-
+				for (ErrorType errorType : reasonableTypes) {
 					std::string candidateKmer = kmerAfterError(kmer, errorType, incLeft);
 					KmerType candidateKmerType = kmerClassifier.classifyKmer(candidateKmer);
 					size_t incCandidate = 0;
