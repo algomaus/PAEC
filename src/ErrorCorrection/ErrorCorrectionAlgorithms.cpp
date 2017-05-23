@@ -17,6 +17,7 @@
 
 std::vector<ErrorType> reasonableErrorTypes(std::string &kmer, size_t posInKmer) {
 	std::vector<ErrorType> res;
+	assert(posInKmer < kmer.size());
 	if (kmer[posInKmer] != 'A') {
 		res.push_back(ErrorType::SUB_FROM_A);
 	}
@@ -29,7 +30,7 @@ std::vector<ErrorType> reasonableErrorTypes(std::string &kmer, size_t posInKmer)
 	if (kmer[posInKmer] != 'T') {
 		res.push_back(ErrorType::SUB_FROM_T);
 	}
-	if (kmer.size() > 1) {
+	if (kmer.size() > 1 && posInKmer < kmer.size() - 1) {
 		res.push_back(ErrorType::INSERTION);
 	}
 	if (posInKmer < kmer.size() - 1) {
