@@ -14,32 +14,67 @@
 #include "../KmerClassification/KmerClassificationUnit.h"
 #include "../KmerClassification/KmerType.h"
 
-std::pair<ErrorType, double> mostLikelyCurrentBase(std::unordered_map<ErrorType, double> &errorProbabilities) {
-	double bestProb = errorProbabilities[ErrorType::CORRECT];
-	ErrorType bestType = ErrorType::CORRECT;
-	for (ErrorType type : errorTypesCurrentBase()) {
-		if (errorProbabilities[type] > bestProb) {
-			bestProb = errorProbabilities[type];
-			bestType = type;
-		}
+
+std::vector<ErrorType> reasonableErrorTypes(std::string &kmer, size_t posInKmer) {
+	std::vector<ErrorType> res;
+	if (kmer[posInKmer] != 'A') {
+		res.push_back(ErrorType::SUB_FROM_A);
 	}
-	return std::make_pair(bestType, bestProb);
+	if (kmer[posInKmer] != 'C') {
+		res.push_back(ErrorType::SUB_FROM_C);
+	}
+	if (kmer[posInKmer] != 'G') {
+		res.push_back(ErrorType::SUB_FROM_G);
+	}
+	if (kmer[posInKmer] != 'T') {
+		res.push_back(ErrorType::SUB_FROM_T);
+	}
+	if (kmer.size() > 1) {
+		res.push_back(ErrorType::INSERTION);
+	}
+	if (posInKmer < kmer.size() - 1) {
+		res.push_back(ErrorType::DEL_OF_A);
+		res.push_back(ErrorType::DEL_OF_C);
+		res.push_back(ErrorType::DEL_OF_G);
+		res.push_back(ErrorType::DEL_OF_T);
+		//res.push_back(ErrorType::MULTIDEL);
+	}
+	return res;
 }
 
-std::pair<ErrorType, double> mostLikelyNextGap(std::unordered_map<ErrorType, double> &errorProbabilities) {
-	double bestProb = errorProbabilities[ErrorType::NODEL];
-	ErrorType bestType = ErrorType::NODEL;
-	for (ErrorType type : errorTypesNextGap()) {
-		if (errorProbabilities[type] > bestProb) {
-			bestProb = errorProbabilities[type];
-			bestType = type;
+std::string findReplacement(const std::string &kmer, ErrorType errorType, size_t posInKmer) {
+	std::string replacement;
+	if (errorType == ErrorType::SUB_FROM_A) {
+		replacement = "A";
+	} else if (errorType == ErrorType::SUB_FROM_C) {
+		replacement = "C";
+	} else if (errorType == ErrorType::SUB_FROM_G) {
+		replacement = "G";
+	} else if (errorType == ErrorType::SUB_FROM_T) {
+		replacement = "T";
+	} else if (errorType == ErrorType::INSERTION) {
+		replacement = ""; // TODO: This will lead to k-mers of even size. Is this a problem?
+	} else {
+		replacement = "";
+		replacement += kmer[posInKmer];
+		if (errorType == ErrorType::DEL_OF_A) {
+			replacement += "A";
+		} else if (errorType == ErrorType::DEL_OF_C) {
+			replacement += "C";
+		} else if (errorType == ErrorType::DEL_OF_G) {
+			replacement += "G";
+		} else if (errorType == ErrorType::DEL_OF_T) {
+			replacement += "T";
+		} else {
+			throw std::runtime_error("Multidel not supported yet!");
 		}
 	}
-	return std::make_pair(bestType, bestProb);
+	return replacement;
 }
 
 std::string kmerAfterError(const std::string &kmer, ErrorType error, int posOfError) {
-	std::string res = kmer;
+	/*std::string res = kmer;
+
 	if (error == ErrorType::SUB_FROM_A) {
 		res[posOfError] = 'A';
 	} else if (error == ErrorType::SUB_FROM_C) {
@@ -62,7 +97,36 @@ std::string kmerAfterError(const std::string &kmer, ErrorType error, int posOfEr
 		res = kmer.substr(0, posOfError + 1) + "_" + kmer.substr(posOfError + 1, kmer.size());
 	}
 
+	return res;*/
+
+	std::string res = kmer;
+
+	res.replace(posOfError, 1, findReplacement(res, error, posOfError));
 	return res;
+}
+
+std::pair<ErrorType, double> mostLikelyCurrentBase(std::unordered_map<ErrorType, double> &errorProbabilities) {
+	double bestProb = errorProbabilities[ErrorType::CORRECT];
+	ErrorType bestType = ErrorType::CORRECT;
+	for (ErrorType type : errorTypesCurrentBase()) {
+		if (errorProbabilities[type] > bestProb) {
+			bestProb = errorProbabilities[type];
+			bestType = type;
+		}
+	}
+	return std::make_pair(bestType, bestProb);
+}
+
+std::pair<ErrorType, double> mostLikelyNextGap(std::unordered_map<ErrorType, double> &errorProbabilities) {
+	double bestProb = errorProbabilities[ErrorType::NODEL];
+	ErrorType bestType = ErrorType::NODEL;
+	for (ErrorType type : errorTypesNextGap()) {
+		if (errorProbabilities[type] > bestProb) {
+			bestProb = errorProbabilities[type];
+			bestType = type;
+		}
+	}
+	return std::make_pair(bestType, bestProb);
 }
 
 KmerType checkLeftOf(size_t pos, const CorrectedRead &corr, KmerClassificationUnit &kmerClassifier) {
@@ -551,18 +615,12 @@ bool growKmer(std::string &kmer, size_t pos, size_t &incLeft, size_t &incRight, 
 	size_t kmerStartPos = pos;
 	KmerType type = KmerType::REPEAT;
 	bool res = false;
-
-	//std::cout << "k-mer before: " << kmer << std::endl;
-
 	while (type == KmerType::REPEAT && kmerStartPos + kMin + incRight + 2 <= n) {
 		incRight += 2;
 		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight);
 		type = kmerClassifier.classifyKmer(kmer);
 		res = true;
 	}
-
-	//std::cout << "k-mer after 1: " << kmer << std::endl;
-
 	while (type == KmerType::REPEAT && pos >= incLeft + 2) {
 		incLeft += 2;
 		kmerStartPos = pos - incLeft;
@@ -570,38 +628,44 @@ bool growKmer(std::string &kmer, size_t pos, size_t &incLeft, size_t &incRight, 
 		type = kmerClassifier.classifyKmer(kmer);
 		res = true;
 	}
-
-	//std::cout << "k-mer after 2: " << kmer << std::endl;
-
 	return res;
 }
 
-std::vector<ErrorType> reasonableErrorTypes(std::string &kmer, size_t posInKmer) {
-	std::vector<ErrorType> res;
-	if (kmer[posInKmer] != 'A') {
-		res.push_back(ErrorType::SUB_FROM_A);
+// TODO: Change corrRead into a const?
+bool growModifiedKmer(std::string &kmer, size_t startPos, size_t &incLeft, size_t &incRight, CorrectedRead &corr,
+		KmerClassificationUnit &kmerClassifier, size_t posInKmer, ErrorType errorType) {
+	size_t kMin = kmer.size();
+	size_t n = corr.correctedRead.sequence.size();
+	size_t kmerStartPos = startPos;
+	KmerType type = KmerType::REPEAT;
+
+	size_t incLeftBegin = incLeft;
+
+	bool res = false;
+	while (type == KmerType::REPEAT && kmerStartPos + kMin + incRight + 2 <= n) {
+		incRight += 2;
+		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight);
+		kmer = kmerAfterError(kmer, errorType, posInKmer);
+		type = kmerClassifier.classifyKmer(kmer);
+		res = true;
 	}
-	if (kmer[posInKmer] != 'C') {
-		res.push_back(ErrorType::SUB_FROM_C);
-	}
-	if (kmer[posInKmer] != 'G') {
-		res.push_back(ErrorType::SUB_FROM_G);
-	}
-	if (kmer[posInKmer] != 'T') {
-		res.push_back(ErrorType::SUB_FROM_T);
-	}
-	if (kmer.size() > 1) {
-		res.push_back(ErrorType::INSERTION);
-	}
-	if (posInKmer < kmer.size() - 1) {
-		res.push_back(ErrorType::DEL_OF_A);
-		res.push_back(ErrorType::DEL_OF_C);
-		res.push_back(ErrorType::DEL_OF_G);
-		res.push_back(ErrorType::DEL_OF_T);
-		//res.push_back(ErrorType::MULTIDEL);
+
+	/*if (startPos == 96) {
+		std::cout << "Hello breakpoint\n";
+	}*/
+
+	while (type == KmerType::REPEAT && startPos >= incLeft + 2) {
+		incLeft += 2;
+		kmerStartPos = startPos - incLeft;
+		kmer = corr.correctedRead.sequence.substr(kmerStartPos, kMin + incRight + incLeft);
+		kmer = kmerAfterError(kmer, errorType, posInKmer + incLeft - incLeftBegin);
+		type = kmerClassifier.classifyKmer(kmer);
+		res = true;
 	}
 	return res;
 }
+
+
 
 CorrectedRead correctRead_KmerImproved(const FASTQRead &fastqRead, ErrorProfileUnit &errorProfile,
 		KmerClassificationUnit &kmerClassifier, bool correctIndels) {
@@ -629,6 +693,17 @@ CorrectedRead correctRead_KmerImproved(const FASTQRead &fastqRead, ErrorProfileU
 				std::vector<ErrorType> candidates;
 				for (ErrorType errorType : reasonableTypes) {
 					std::string candidateKmer = kmerAfterError(kmer, errorType, incLeft);
+					if (kmerClassifier.classifyKmer(candidateKmer) == KmerType::REPEAT) {
+						size_t incLeftCandidate = incLeft;
+						size_t incRightCandidate = incRight;
+						growModifiedKmer(candidateKmer, kmerStartPos, incLeftCandidate, incRightCandidate, corr, kmerClassifier, incLeft, errorType);
+					}
+					if (kmerClassifier.classifyKmer(candidateKmer) != KmerType::UNTRUSTED) {
+						candidates.push_back(errorType);
+					}
+
+					/*
+					std::string candidateKmer = kmerAfterError(kmer, errorType, incLeft);
 					KmerType candidateKmerType = kmerClassifier.classifyKmer(candidateKmer);
 					size_t incCandidate = 0;
 					// increase candidate k-mer to the right if it is repetitive
@@ -646,6 +721,7 @@ CorrectedRead correctRead_KmerImproved(const FASTQRead &fastqRead, ErrorProfileU
 					if (candidateKmerType != KmerType::UNTRUSTED) {
 						candidates.push_back(errorType);
 					}
+					*/
 				}
 
 				if (candidates.size() == 0) {
